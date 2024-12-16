@@ -1,0 +1,2591 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="stylesheet" href="css/leaflet.css">
+        <link rel="stylesheet" href="css/L.Control.Layers.Tree.css">
+        <link rel="stylesheet" href="css/L.Control.Locate.min.css">
+        <link rel="stylesheet" href="css/qgis2web.css">
+        <link rel="stylesheet" href="css/fontawesome-all.min.css">
+        <link rel="stylesheet" href="css/leaflet-search.css">
+        <link rel="stylesheet" href="css/filter.css">
+<link rel="stylesheet" href="css/nouislider.min.css">
+        <link rel="stylesheet" href="css/leaflet-control-geocoder.Geocoder.css">
+        <link rel="stylesheet" href="css/leaflet-measure.css">
+		 <link rel="stylesheet" href="https://unpkg.com/leaflet-draw/dist/leaflet.draw.css" />
+	<link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
+        <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+		#labelToggleButton {
+            position: absolute;
+            top: 54%;
+            left: 1%;
+            z-index: 1000;
+            background-color: #fff;
+            border: 4px solid #ccc;
+            padding: 5px;
+			 width: 35px; 
+            cursor: pointer;
+            font-size: 17px;
+			color: #FF0000;
+            font-weight: bold;
+        }
+        </style>
+        <title></title>
+    </head>
+    <body>
+        <div id="map">
+        </div>
+		<button id="labelToggleButton" onclick="toggleLabelLayer()">N</button>
+        <script src="js/qgis2web_expressions.js"></script>
+        <script src="js/leaflet.js"></script>
+        <script src="js/L.Control.Layers.Tree.min.js"></script>
+        <script src="js/L.Control.Locate.min.js"></script>
+        <script src="js/leaflet.rotatedMarker.js"></script>
+        <script src="js/leaflet.pattern.js"></script>
+        <script src="js/leaflet-hash.js"></script>
+        <script src="js/Autolinker.min.js"></script>
+        <script src="js/rbush.min.js"></script>
+        <script src="js/labelgun.min.js"></script>
+        <script src="js/labels.js"></script>
+        <script src="js/leaflet-control-geocoder.Geocoder.js"></script>
+        <script src="js/leaflet-measure.js"></script>
+        <script src="js/leaflet-search.js"></script>
+        <script src="js/tailDT.js"></script>
+<script src="js/nouislider.min.js"></script>
+<script src="js/wNumb.js"></script>
+        <script src="data/PublicBuilding_1.js"></script>
+        <script src="data/PublicPond_2.js"></script>
+        <script src="data/PWDDistrictPanRoad_3.js"></script>
+        <script src="data/Stream_4.js"></script>
+        <script src="data/DrainagePWall_5.js"></script>
+        <script src="data/Road_6.js"></script>
+        <script src="data/Birm_7.js"></script>
+        <script src="data/BottleBooth_8.js"></script>
+        <script src="data/ProposedCulvertSite_9.js"></script>
+        <script src="data/OpenWell_10.js"></script>
+        <script src="data/Bridge_11.js"></script>
+        <script src="data/Culvert_12.js"></script>
+        <script src="data/RainWaterHarvestingStructure_13.js"></script>
+        <script src="data/Dip_14.js"></script>
+        <script src="data/AnganavadiRent_15.js"></script>
+        <script src="data/MastLight_16.js"></script>
+        <script src="data/BabyFriendlyToilet_17.js"></script>
+        <script src="data/Node_18.js"></script>
+		<script src="https://unpkg.com/leaflet-draw/dist/leaflet.draw.js"></script>
+<script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+        <script>
+        var map = L.map('map', {
+            zoomControl:false, maxZoom:28, minZoom:1
+        })
+        var hash = new L.Hash(map);
+		var labelsLayer = new L.layerGroup();
+		var labelsVisible = false; // Track the visibility state of labels
+		 // Function to create labels for each Node and add them to the labelsLayer
+        function addLabelsForNodes() {
+            json_Node_18.features.forEach(function (feature) {
+                var latlng, NodeName;
+
+                // Adjust the following lines based on your GeoJSON structure
+                if (feature.geometry.type === 'Point') {
+                    // If the geometry type is Point, use the coordinates directly
+                    latlng = L.latLng(feature.geometry.coordinates[1], feature.geometry.coordinates[0]);
+                } else if (feature.geometry.type === 'LineString' && feature.geometry.coordinates.length > 1) {
+                    // If the geometry type is LineString, use the midpoint of the line
+                    var midPointIndex = Math.floor(feature.geometry.coordinates.length / 2);
+                    latlng = L.latLng(feature.geometry.coordinates[midPointIndex][1], feature.geometry.coordinates[midPointIndex][0]);
+                } else {
+                    // Handle other geometry types as needed
+                    return;
+                }
+
+                // Adjust the following line based on the property containing the Node
+                NodeName = feature.properties['Node_Numbe'];
+
+                // Create a divIcon with the Node Name as the content
+                var labelIcon = L.divIcon({
+                    className: '',
+                    html: NodeName,
+					iconAnchor: [50, 0],
+                });
+
+                // Create a marker with the labelIcon and add it to the labelsLayer
+                var labelMarker = L.marker(latlng, { icon: labelIcon });
+                labelsLayer.addLayer(labelMarker);
+            });
+        }
+
+        // Call the function to add labels for Nodes
+        
+		 // Function to toggle the visibility of the labels layer
+            function toggleLabelLayer() {
+                if (labelsVisible) {
+                    map.removeLayer(labelsLayer);
+                } else {
+                    map.addLayer(labelsLayer);
+                }
+                labelsVisible = !labelsVisible; // Toggle the visibility state
+            }
+			addLabelsForNodes();
+        map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
+        var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
+        // remove popup's row if "visible-with-data"
+        function removeEmptyRowsFromPopupContent(content, feature) {
+         var tempDiv = document.createElement('div');
+         tempDiv.innerHTML = content;
+         var rows = tempDiv.querySelectorAll('tr');
+         for (var i = 0; i < rows.length; i++) {
+             var td = rows[i].querySelector('td.visible-with-data');
+             var key = td ? td.id : '';
+             if (td && td.classList.contains('visible-with-data') && feature.properties[key] == null) {
+                 rows[i].parentNode.removeChild(rows[i]);
+             }
+         }
+         return tempDiv.innerHTML;
+        }
+        // add class to format popup if it contains media
+		function addClassToPopupIfMedia(content, popup) {
+			var tempDiv = document.createElement('div');
+			tempDiv.innerHTML = content;
+			if (tempDiv.querySelector('td img')) {
+				popup._contentNode.classList.add('media');
+					// Delay to force the redraw
+					setTimeout(function() {
+						popup.update();
+					}, 10);
+			} else {
+				popup._contentNode.classList.remove('media');
+			}
+		}
+        var zoomControl = L.control.zoom({
+            position: 'topleft'
+        }).addTo(map);
+        L.control.locate({locateOptions: {maxZoom: 19}}).addTo(map);
+        var measureControl = new L.Control.Measure({
+            position: 'topleft',
+            primaryLengthUnit: 'meters',
+            secondaryLengthUnit: 'kilometers',
+            primaryAreaUnit: 'sqmeters',
+            secondaryAreaUnit: 'hectares'
+        });
+        measureControl.addTo(map);
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0].innerHTML = '';
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0].className += ' fas fa-ruler';
+        var bounds_group = new L.featureGroup([]);
+        function setBounds() {
+            if (bounds_group.getLayers().length) {
+                map.fitBounds(bounds_group.getBounds());
+            }
+        }
+        map.createPane('pane_GoogleSatellite_0');
+        map.getPane('pane_GoogleSatellite_0').style.zIndex = 400;
+        var layer_GoogleSatellite_0 = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+            pane: 'pane_GoogleSatellite_0',
+            opacity: 1.0,
+            attribution: '',
+            minZoom: 1,
+            maxZoom: 28,
+            minNativeZoom: 0,
+            maxNativeZoom: 19
+        });
+        layer_GoogleSatellite_0;
+        map.addLayer(layer_GoogleSatellite_0);
+        function pop_PublicBuilding_1(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Ward</th>\
+                        <td>' + (feature.properties['Ward'] !== null ? autolinker.link(feature.properties['Ward'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">build_name</th>\
+                        <td>' + (feature.properties['build_name'] !== null ? autolinker.link(feature.properties['build_name'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Code</th>\
+                        <td>' + (feature.properties['Code'] !== null ? autolinker.link(feature.properties['Code'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Road_Proxi</th>\
+                        <td>' + (feature.properties['Road_Proxi'] !== null ? autolinker.link(feature.properties['Road_Proxi'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Village_Su</th>\
+                        <td>' + (feature.properties['Village_Su'] !== null ? autolinker.link(feature.properties['Village_Su'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Plinth_Are</th>\
+                        <td>' + (feature.properties['Plinth_Are'] !== null ? autolinker.link(feature.properties['Plinth_Are'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">No_of_Floo</th>\
+                        <td>' + (feature.properties['No_of_Floo'] !== null ? autolinker.link(feature.properties['No_of_Floo'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Roof</th>\
+                        <td>' + (feature.properties['Roof'] !== null ? autolinker.link(feature.properties['Roof'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Wall</th>\
+                        <td>' + (feature.properties['Wall'] !== null ? autolinker.link(feature.properties['Wall'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Floor</th>\
+                        <td>' + (feature.properties['Floor'] !== null ? autolinker.link(feature.properties['Floor'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Tressed_or</th>\
+                        <td>' + (feature.properties['Tressed_or'] !== null ? autolinker.link(feature.properties['Tressed_or'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Land_Area</th>\
+                        <td>' + (feature.properties['Land_Area'] !== null ? autolinker.link(feature.properties['Land_Area'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Category</th>\
+                        <td>' + (feature.properties['Category'] !== null ? autolinker.link(feature.properties['Category'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Place</th>\
+                        <td>' + (feature.properties['Place'] !== null ? autolinker.link(feature.properties['Place'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Remarks</th>\
+                        <td>' + (feature.properties['Remarks'] !== null ? autolinker.link(feature.properties['Remarks'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">AREA</th>\
+                        <td>' + (feature.properties['AREA'] !== null ? autolinker.link(feature.properties['AREA'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">PERIMETER</th>\
+                        <td>' + (feature.properties['PERIMETER'] !== null ? autolinker.link(feature.properties['PERIMETER'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">XCOORD</th>\
+                        <td>' + (feature.properties['XCOORD'] !== null ? autolinker.link(feature.properties['XCOORD'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">YCOORD</th>\
+                        <td>' + (feature.properties['YCOORD'] !== null ? autolinker.link(feature.properties['YCOORD'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_PublicBuilding_1_0() {
+            return {
+                pane: 'pane_PublicBuilding_1',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(243,166,178,1.0)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_PublicBuilding_1');
+        map.getPane('pane_PublicBuilding_1').style.zIndex = 401;
+        map.getPane('pane_PublicBuilding_1').style['mix-blend-mode'] = 'normal';
+        var layer_PublicBuilding_1 = new L.geoJson(json_PublicBuilding_1, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_PublicBuilding_1',
+            layerName: 'layer_PublicBuilding_1',
+            pane: 'pane_PublicBuilding_1',
+            onEachFeature: pop_PublicBuilding_1,
+            style: style_PublicBuilding_1_0,
+        });
+        bounds_group.addLayer(layer_PublicBuilding_1);
+        map.addLayer(layer_PublicBuilding_1);
+        function pop_PublicPond_2(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Name</th>\
+                        <td>' + (feature.properties['Name'] !== null ? autolinker.link(feature.properties['Name'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Ward</th>\
+                        <td>' + (feature.properties['Ward'] !== null ? autolinker.link(feature.properties['Ward'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Code</th>\
+                        <td>' + (feature.properties['Code'] !== null ? autolinker.link(feature.properties['Code'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Road</th>\
+                        <td>' + (feature.properties['Road'] !== null ? autolinker.link(feature.properties['Road'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Length</th>\
+                        <td>' + (feature.properties['Length'] !== null ? autolinker.link(feature.properties['Length'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Width</th>\
+                        <td>' + (feature.properties['Width'] !== null ? autolinker.link(feature.properties['Width'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Depth</th>\
+                        <td>' + (feature.properties['Depth'] !== null ? autolinker.link(feature.properties['Depth'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Side_Wall</th>\
+                        <td>' + (feature.properties['Side_Wall'] !== null ? autolinker.link(feature.properties['Side_Wall'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Remarks</th>\
+                        <td>' + (feature.properties['Remarks'] !== null ? autolinker.link(feature.properties['Remarks'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">AREA</th>\
+                        <td>' + (feature.properties['AREA'] !== null ? autolinker.link(feature.properties['AREA'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">PERIMETER</th>\
+                        <td>' + (feature.properties['PERIMETER'] !== null ? autolinker.link(feature.properties['PERIMETER'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">XCOORD</th>\
+                        <td>' + (feature.properties['XCOORD'] !== null ? autolinker.link(feature.properties['XCOORD'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">YCOORD</th>\
+                        <td>' + (feature.properties['YCOORD'] !== null ? autolinker.link(feature.properties['YCOORD'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_PublicPond_2_0() {
+            return {
+                pane: 'pane_PublicPond_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,158,23,1.0)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_PublicPond_2');
+        map.getPane('pane_PublicPond_2').style.zIndex = 402;
+        map.getPane('pane_PublicPond_2').style['mix-blend-mode'] = 'normal';
+        var layer_PublicPond_2 = new L.geoJson(json_PublicPond_2, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_PublicPond_2',
+            layerName: 'layer_PublicPond_2',
+            pane: 'pane_PublicPond_2',
+            onEachFeature: pop_PublicPond_2,
+            style: style_PublicPond_2_0,
+        });
+        bounds_group.addLayer(layer_PublicPond_2);
+        map.addLayer(layer_PublicPond_2);
+        function pop_PWDDistrictPanRoad_3(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Name</th>\
+                        <td>' + (feature.properties['Name'] !== null ? autolinker.link(feature.properties['Name'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Length</th>\
+                        <td>' + (feature.properties['Length'] !== null ? autolinker.link(feature.properties['Length'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Category</th>\
+                        <td>' + (feature.properties['Category'] !== null ? autolinker.link(feature.properties['Category'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">XCOORD</th>\
+                        <td>' + (feature.properties['XCOORD'] !== null ? autolinker.link(feature.properties['XCOORD'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">YCOORD</th>\
+                        <td>' + (feature.properties['YCOORD'] !== null ? autolinker.link(feature.properties['YCOORD'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_PWDDistrictPanRoad_3_0() {
+            return {
+                pane: 'pane_PWDDistrictPanRoad_3',
+                opacity: 1,
+                color: 'rgba(152,125,183,1.0)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 4.0,
+                fillOpacity: 0,
+                interactive: true,
+            }
+        }
+        map.createPane('pane_PWDDistrictPanRoad_3');
+        map.getPane('pane_PWDDistrictPanRoad_3').style.zIndex = 403;
+        map.getPane('pane_PWDDistrictPanRoad_3').style['mix-blend-mode'] = 'normal';
+        var layer_PWDDistrictPanRoad_3 = new L.geoJson(json_PWDDistrictPanRoad_3, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_PWDDistrictPanRoad_3',
+            layerName: 'layer_PWDDistrictPanRoad_3',
+            pane: 'pane_PWDDistrictPanRoad_3',
+            onEachFeature: pop_PWDDistrictPanRoad_3,
+            style: style_PWDDistrictPanRoad_3_0,
+        });
+        bounds_group.addLayer(layer_PWDDistrictPanRoad_3);
+        map.addLayer(layer_PWDDistrictPanRoad_3);
+        function pop_Stream_4(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Name</th>\
+                        <td>' + (feature.properties['Name'] !== null ? autolinker.link(feature.properties['Name'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Length</th>\
+                        <td>' + (feature.properties['Length'] !== null ? autolinker.link(feature.properties['Length'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Code</th>\
+                        <td>' + (feature.properties['Code'] !== null ? autolinker.link(feature.properties['Code'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Water_usag</th>\
+                        <td>' + (feature.properties['Water_usag'] !== null ? autolinker.link(feature.properties['Water_usag'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Vegetation</th>\
+                        <td>' + (feature.properties['Vegetation'] !== null ? autolinker.link(feature.properties['Vegetation'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Bridge</th>\
+                        <td>' + (feature.properties['Bridge'] !== null ? autolinker.link(feature.properties['Bridge'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Perennial</th>\
+                        <td>' + (feature.properties['Perennial'] !== null ? autolinker.link(feature.properties['Perennial'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Branches</th>\
+                        <td>' + (feature.properties['Branches'] !== null ? autolinker.link(feature.properties['Branches'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Sluice</th>\
+                        <td>' + (feature.properties['Sluice'] !== null ? autolinker.link(feature.properties['Sluice'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Culvert</th>\
+                        <td>' + (feature.properties['Culvert'] !== null ? autolinker.link(feature.properties['Culvert'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Motor_shed</th>\
+                        <td>' + (feature.properties['Motor_shed'] !== null ? autolinker.link(feature.properties['Motor_shed'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Side_Wall</th>\
+                        <td>' + (feature.properties['Side_Wall'] !== null ? autolinker.link(feature.properties['Side_Wall'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Condition</th>\
+                        <td>' + (feature.properties['Condition'] !== null ? autolinker.link(feature.properties['Condition'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Ward</th>\
+                        <td>' + (feature.properties['Ward'] !== null ? autolinker.link(feature.properties['Ward'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Width</th>\
+                        <td>' + (feature.properties['Width'] !== null ? autolinker.link(feature.properties['Width'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Depth</th>\
+                        <td>' + (feature.properties['Depth'] !== null ? autolinker.link(feature.properties['Depth'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Stream_4_0() {
+            return {
+                pane: 'pane_Stream_4',
+                opacity: 1,
+                color: 'rgba(164,113,88,1.0)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 4.0,
+                fillOpacity: 0,
+                interactive: true,
+            }
+        }
+        map.createPane('pane_Stream_4');
+        map.getPane('pane_Stream_4').style.zIndex = 404;
+        map.getPane('pane_Stream_4').style['mix-blend-mode'] = 'normal';
+        var layer_Stream_4 = new L.geoJson(json_Stream_4, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_Stream_4',
+            layerName: 'layer_Stream_4',
+            pane: 'pane_Stream_4',
+            onEachFeature: pop_Stream_4,
+            style: style_Stream_4_0,
+        });
+        bounds_group.addLayer(layer_Stream_4);
+        map.addLayer(layer_Stream_4);
+        function pop_DrainagePWall_5(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Name</th>\
+                        <td>' + (feature.properties['Name'] !== null ? autolinker.link(feature.properties['Name'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Ward</th>\
+                        <td>' + (feature.properties['Ward'] !== null ? autolinker.link(feature.properties['Ward'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Code</th>\
+                        <td>' + (feature.properties['Code'] !== null ? autolinker.link(feature.properties['Code'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Road_Name</th>\
+                        <td>' + (feature.properties['Road_Name'] !== null ? autolinker.link(feature.properties['Road_Name'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Length</th>\
+                        <td>' + (feature.properties['Length'] !== null ? autolinker.link(feature.properties['Length'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Width</th>\
+                        <td>' + (feature.properties['Width'] !== null ? autolinker.link(feature.properties['Width'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Depth</th>\
+                        <td>' + (feature.properties['Depth'] !== null ? autolinker.link(feature.properties['Depth'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Type</th>\
+                        <td>' + (feature.properties['Type'] !== null ? autolinker.link(feature.properties['Type'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Condition</th>\
+                        <td>' + (feature.properties['Condition'] !== null ? autolinker.link(feature.properties['Condition'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">XCOORD</th>\
+                        <td>' + (feature.properties['XCOORD'] !== null ? autolinker.link(feature.properties['XCOORD'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">YCOORD</th>\
+                        <td>' + (feature.properties['YCOORD'] !== null ? autolinker.link(feature.properties['YCOORD'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_DrainagePWall_5_0() {
+            return {
+                pane: 'pane_DrainagePWall_5',
+                opacity: 1,
+                color: 'rgba(243,166,178,1.0)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 4.0,
+                fillOpacity: 0,
+                interactive: true,
+            }
+        }
+        map.createPane('pane_DrainagePWall_5');
+        map.getPane('pane_DrainagePWall_5').style.zIndex = 405;
+        map.getPane('pane_DrainagePWall_5').style['mix-blend-mode'] = 'normal';
+        var layer_DrainagePWall_5 = new L.geoJson(json_DrainagePWall_5, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_DrainagePWall_5',
+            layerName: 'layer_DrainagePWall_5',
+            pane: 'pane_DrainagePWall_5',
+            onEachFeature: pop_DrainagePWall_5,
+            style: style_DrainagePWall_5_0,
+        });
+        bounds_group.addLayer(layer_DrainagePWall_5);
+        map.addLayer(layer_DrainagePWall_5);
+        function pop_Road_6(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">road_name</th>\
+                        <td>' + (feature.properties['road_name'] !== null ? autolinker.link(feature.properties['road_name'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">road_ward</th>\
+                        <td>' + (feature.properties['road_ward'] !== null ? autolinker.link(feature.properties['road_ward'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Code</th>\
+                        <td>' + (feature.properties['Code'] !== null ? autolinker.link(feature.properties['Code'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Catagory</th>\
+                        <td>' + (feature.properties['Catagory'] !== null ? autolinker.link(feature.properties['Catagory'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">road_stype</th>\
+                        <td>' + (feature.properties['road_stype'] !== null ? autolinker.link(feature.properties['road_stype'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Total_Widt</th>\
+                        <td>' + (feature.properties['Total_Widt'] !== null ? autolinker.link(feature.properties['Total_Widt'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Cway_Width</th>\
+                        <td>' + (feature.properties['Cway_Width'] !== null ? autolinker.link(feature.properties['Cway_Width'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">FW_Right</th>\
+                        <td>' + (feature.properties['FW_Right'] !== null ? autolinker.link(feature.properties['FW_Right'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">FW_Left</th>\
+                        <td>' + (feature.properties['FW_Left'] !== null ? autolinker.link(feature.properties['FW_Left'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Starting_P</th>\
+                        <td>' + (feature.properties['Starting_P'] !== null ? autolinker.link(feature.properties['Starting_P'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Ending_Poi</th>\
+                        <td>' + (feature.properties['Ending_Poi'] !== null ? autolinker.link(feature.properties['Ending_Poi'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Node</th>\
+                        <td>' + (feature.properties['Node'] !== null ? autolinker.link(feature.properties['Node'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Road_Condi</th>\
+                        <td>' + (feature.properties['Road_Condi'] !== null ? autolinker.link(feature.properties['Road_Condi'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Traffic_De</th>\
+                        <td>' + (feature.properties['Traffic_De'] !== null ? autolinker.link(feature.properties['Traffic_De'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Bus_Transp</th>\
+                        <td>' + (feature.properties['Bus_Transp'] !== null ? autolinker.link(feature.properties['Bus_Transp'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Length</th>\
+                        <td>' + (feature.properties['Length'] !== null ? autolinker.link(feature.properties['Length'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">XCOORD</th>\
+                        <td>' + (feature.properties['XCOORD'] !== null ? autolinker.link(feature.properties['XCOORD'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">YCOORD</th>\
+                        <td>' + (feature.properties['YCOORD'] !== null ? autolinker.link(feature.properties['YCOORD'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">RoadName</th>\
+                        <td>' + (feature.properties['RoadName'] !== null ? autolinker.link(feature.properties['RoadName'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Starting</th>\
+                        <td>' + (feature.properties['Starting'] !== null ? autolinker.link(feature.properties['Starting'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Ending</th>\
+                        <td>' + (feature.properties['Ending'] !== null ? autolinker.link(feature.properties['Ending'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Road_6_0() {
+            return {
+                pane: 'pane_Road_6',
+                opacity: 1,
+                color: 'rgba(183,167,125,1.0)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 4.0,
+                fillOpacity: 0,
+                interactive: true,
+            }
+        }
+        map.createPane('pane_Road_6');
+        map.getPane('pane_Road_6').style.zIndex = 406;
+        map.getPane('pane_Road_6').style['mix-blend-mode'] = 'normal';
+        var layer_Road_6 = new L.geoJson(json_Road_6, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_Road_6',
+            layerName: 'layer_Road_6',
+            pane: 'pane_Road_6',
+            onEachFeature: pop_Road_6,
+            style: style_Road_6_0,
+        });
+        bounds_group.addLayer(layer_Road_6);
+        map.addLayer(layer_Road_6);
+        function pop_Birm_7(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Name</th>\
+                        <td>' + (feature.properties['Name'] !== null ? autolinker.link(feature.properties['Name'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Ward</th>\
+                        <td>' + (feature.properties['Ward'] !== null ? autolinker.link(feature.properties['Ward'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Code</th>\
+                        <td>' + (feature.properties['Code'] !== null ? autolinker.link(feature.properties['Code'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Length</th>\
+                        <td>' + (feature.properties['Length'] !== null ? autolinker.link(feature.properties['Length'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Road_Name</th>\
+                        <td>' + (feature.properties['Road_Name'] !== null ? autolinker.link(feature.properties['Road_Name'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Width</th>\
+                        <td>' + (feature.properties['Width'] !== null ? autolinker.link(feature.properties['Width'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Surface</th>\
+                        <td>' + (feature.properties['Surface'] !== null ? autolinker.link(feature.properties['Surface'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">XCOORD</th>\
+                        <td>' + (feature.properties['XCOORD'] !== null ? autolinker.link(feature.properties['XCOORD'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">YCOORD</th>\
+                        <td>' + (feature.properties['YCOORD'] !== null ? autolinker.link(feature.properties['YCOORD'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Birm_7_0() {
+            return {
+                pane: 'pane_Birm_7',
+                opacity: 1,
+                color: 'rgba(255,158,23,1.0)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 4.0,
+                fillOpacity: 0,
+                interactive: true,
+            }
+        }
+        map.createPane('pane_Birm_7');
+        map.getPane('pane_Birm_7').style.zIndex = 407;
+        map.getPane('pane_Birm_7').style['mix-blend-mode'] = 'normal';
+        var layer_Birm_7 = new L.geoJson(json_Birm_7, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_Birm_7',
+            layerName: 'layer_Birm_7',
+            pane: 'pane_Birm_7',
+            onEachFeature: pop_Birm_7,
+            style: style_Birm_7_0,
+        });
+        bounds_group.addLayer(layer_Birm_7);
+        map.addLayer(layer_Birm_7);
+        function pop_BottleBooth_8(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Name</th>\
+                        <td>' + (feature.properties['Name'] !== null ? autolinker.link(feature.properties['Name'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Ward</th>\
+                        <td>' + (feature.properties['Ward'] !== null ? autolinker.link(feature.properties['Ward'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Code</th>\
+                        <td>' + (feature.properties['Code'] !== null ? autolinker.link(feature.properties['Code'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Road_Name</th>\
+                        <td>' + (feature.properties['Road_Name'] !== null ? autolinker.link(feature.properties['Road_Name'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">XCOORD</th>\
+                        <td>' + (feature.properties['XCOORD'] !== null ? autolinker.link(feature.properties['XCOORD'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">YCOORD</th>\
+                        <td>' + (feature.properties['YCOORD'] !== null ? autolinker.link(feature.properties['YCOORD'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_BottleBooth_8_0() {
+            return {
+                pane: 'pane_BottleBooth_8',
+                radius: 3.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(152,125,183,1.0)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_BottleBooth_8');
+        map.getPane('pane_BottleBooth_8').style.zIndex = 408;
+        map.getPane('pane_BottleBooth_8').style['mix-blend-mode'] = 'normal';
+        var layer_BottleBooth_8 = new L.geoJson(json_BottleBooth_8, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_BottleBooth_8',
+            layerName: 'layer_BottleBooth_8',
+            pane: 'pane_BottleBooth_8',
+            onEachFeature: pop_BottleBooth_8,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_BottleBooth_8_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_BottleBooth_8);
+        map.addLayer(layer_BottleBooth_8);
+        function pop_ProposedCulvertSite_9(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Name</th>\
+                        <td>' + (feature.properties['Name'] !== null ? autolinker.link(feature.properties['Name'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Ward</th>\
+                        <td>' + (feature.properties['Ward'] !== null ? autolinker.link(feature.properties['Ward'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Code</th>\
+                        <td>' + (feature.properties['Code'] !== null ? autolinker.link(feature.properties['Code'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Road_Name</th>\
+                        <td>' + (feature.properties['Road_Name'] !== null ? autolinker.link(feature.properties['Road_Name'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">XCOORD</th>\
+                        <td>' + (feature.properties['XCOORD'] !== null ? autolinker.link(feature.properties['XCOORD'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">YCOORD</th>\
+                        <td>' + (feature.properties['YCOORD'] !== null ? autolinker.link(feature.properties['YCOORD'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_ProposedCulvertSite_9_0() {
+            return {
+                pane: 'pane_ProposedCulvertSite_9',
+                radius: 3.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(164,113,88,1.0)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_ProposedCulvertSite_9');
+        map.getPane('pane_ProposedCulvertSite_9').style.zIndex = 409;
+        map.getPane('pane_ProposedCulvertSite_9').style['mix-blend-mode'] = 'normal';
+        var layer_ProposedCulvertSite_9 = new L.geoJson(json_ProposedCulvertSite_9, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_ProposedCulvertSite_9',
+            layerName: 'layer_ProposedCulvertSite_9',
+            pane: 'pane_ProposedCulvertSite_9',
+            onEachFeature: pop_ProposedCulvertSite_9,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_ProposedCulvertSite_9_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_ProposedCulvertSite_9);
+        map.addLayer(layer_ProposedCulvertSite_9);
+        function pop_OpenWell_10(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Name_New</th>\
+                        <td>' + (feature.properties['Name_New'] !== null ? autolinker.link(feature.properties['Name_New'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Ward</th>\
+                        <td>' + (feature.properties['Ward'] !== null ? autolinker.link(feature.properties['Ward'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">well_name</th>\
+                        <td>' + (feature.properties['well_name'] !== null ? autolinker.link(feature.properties['well_name'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Remarks</th>\
+                        <td>' + (feature.properties['Remarks'] !== null ? autolinker.link(feature.properties['Remarks'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Code</th>\
+                        <td>' + (feature.properties['Code'] !== null ? autolinker.link(feature.properties['Code'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Dimension</th>\
+                        <td>' + (feature.properties['Dimension'] !== null ? autolinker.link(feature.properties['Dimension'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Pump</th>\
+                        <td>' + (feature.properties['Pump'] !== null ? autolinker.link(feature.properties['Pump'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Condition</th>\
+                        <td>' + (feature.properties['Condition'] !== null ? autolinker.link(feature.properties['Condition'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Type</th>\
+                        <td>' + (feature.properties['Type'] !== null ? autolinker.link(feature.properties['Type'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">XCOORD</th>\
+                        <td>' + (feature.properties['XCOORD'] !== null ? autolinker.link(feature.properties['XCOORD'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">YCOORD</th>\
+                        <td>' + (feature.properties['YCOORD'] !== null ? autolinker.link(feature.properties['YCOORD'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_OpenWell_10_0() {
+            return {
+                pane: 'pane_OpenWell_10',
+                radius: 3.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(67,169,233,1.0)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_OpenWell_10');
+        map.getPane('pane_OpenWell_10').style.zIndex = 410;
+        map.getPane('pane_OpenWell_10').style['mix-blend-mode'] = 'normal';
+        var layer_OpenWell_10 = new L.geoJson(json_OpenWell_10, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_OpenWell_10',
+            layerName: 'layer_OpenWell_10',
+            pane: 'pane_OpenWell_10',
+            onEachFeature: pop_OpenWell_10,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_OpenWell_10_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_OpenWell_10);
+        map.addLayer(layer_OpenWell_10);
+        function pop_Bridge_11(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">bridge_nam</th>\
+                        <td>' + (feature.properties['bridge_nam'] !== null ? autolinker.link(feature.properties['bridge_nam'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Ward</th>\
+                        <td>' + (feature.properties['Ward'] !== null ? autolinker.link(feature.properties['Ward'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Code</th>\
+                        <td>' + (feature.properties['Code'] !== null ? autolinker.link(feature.properties['Code'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Dimension</th>\
+                        <td>' + (feature.properties['Dimension'] !== null ? autolinker.link(feature.properties['Dimension'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Remarks</th>\
+                        <td>' + (feature.properties['Remarks'] !== null ? autolinker.link(feature.properties['Remarks'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">XCOORD</th>\
+                        <td>' + (feature.properties['XCOORD'] !== null ? autolinker.link(feature.properties['XCOORD'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">YCOORD</th>\
+                        <td>' + (feature.properties['YCOORD'] !== null ? autolinker.link(feature.properties['YCOORD'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Category</th>\
+                        <td>' + (feature.properties['Category'] !== null ? autolinker.link(feature.properties['Category'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Bridge_11_0() {
+            return {
+                pane: 'pane_Bridge_11',
+                radius: 3.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(229,182,54,1.0)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_Bridge_11');
+        map.getPane('pane_Bridge_11').style.zIndex = 411;
+        map.getPane('pane_Bridge_11').style['mix-blend-mode'] = 'normal';
+        var layer_Bridge_11 = new L.geoJson(json_Bridge_11, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_Bridge_11',
+            layerName: 'layer_Bridge_11',
+            pane: 'pane_Bridge_11',
+            onEachFeature: pop_Bridge_11,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_Bridge_11_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_Bridge_11);
+        map.addLayer(layer_Bridge_11);
+        function pop_Culvert_12(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Name</th>\
+                        <td>' + (feature.properties['Name'] !== null ? autolinker.link(feature.properties['Name'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Ward</th>\
+                        <td>' + (feature.properties['Ward'] !== null ? autolinker.link(feature.properties['Ward'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Code</th>\
+                        <td>' + (feature.properties['Code'] !== null ? autolinker.link(feature.properties['Code'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Road_Name</th>\
+                        <td>' + (feature.properties['Road_Name'] !== null ? autolinker.link(feature.properties['Road_Name'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Length</th>\
+                        <td>' + (feature.properties['Length'] !== null ? autolinker.link(feature.properties['Length'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Width</th>\
+                        <td>' + (feature.properties['Width'] !== null ? autolinker.link(feature.properties['Width'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Depth</th>\
+                        <td>' + (feature.properties['Depth'] !== null ? autolinker.link(feature.properties['Depth'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Type</th>\
+                        <td>' + (feature.properties['Type'] !== null ? autolinker.link(feature.properties['Type'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Condition</th>\
+                        <td>' + (feature.properties['Condition'] !== null ? autolinker.link(feature.properties['Condition'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">XCOORD</th>\
+                        <td>' + (feature.properties['XCOORD'] !== null ? autolinker.link(feature.properties['XCOORD'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">YCOORD</th>\
+                        <td>' + (feature.properties['YCOORD'] !== null ? autolinker.link(feature.properties['YCOORD'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Culvert_12_0() {
+            return {
+                pane: 'pane_Culvert_12',
+                radius: 3.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(145,82,45,1.0)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_Culvert_12');
+        map.getPane('pane_Culvert_12').style.zIndex = 412;
+        map.getPane('pane_Culvert_12').style['mix-blend-mode'] = 'normal';
+        var layer_Culvert_12 = new L.geoJson(json_Culvert_12, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_Culvert_12',
+            layerName: 'layer_Culvert_12',
+            pane: 'pane_Culvert_12',
+            onEachFeature: pop_Culvert_12,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_Culvert_12_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_Culvert_12);
+        map.addLayer(layer_Culvert_12);
+        function pop_RainWaterHarvestingStructure_13(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Name</th>\
+                        <td>' + (feature.properties['Name'] !== null ? autolinker.link(feature.properties['Name'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Ward</th>\
+                        <td>' + (feature.properties['Ward'] !== null ? autolinker.link(feature.properties['Ward'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Code</th>\
+                        <td>' + (feature.properties['Code'] !== null ? autolinker.link(feature.properties['Code'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Road_Name</th>\
+                        <td>' + (feature.properties['Road_Name'] !== null ? autolinker.link(feature.properties['Road_Name'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Dimension</th>\
+                        <td>' + (feature.properties['Dimension'] !== null ? autolinker.link(feature.properties['Dimension'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Location</th>\
+                        <td>' + (feature.properties['Location'] !== null ? autolinker.link(feature.properties['Location'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">XCOORD</th>\
+                        <td>' + (feature.properties['XCOORD'] !== null ? autolinker.link(feature.properties['XCOORD'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">YCOORD</th>\
+                        <td>' + (feature.properties['YCOORD'] !== null ? autolinker.link(feature.properties['YCOORD'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_RainWaterHarvestingStructure_13_0() {
+            return {
+                pane: 'pane_RainWaterHarvestingStructure_13',
+                radius: 3.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(36,115,233,1.0)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_RainWaterHarvestingStructure_13');
+        map.getPane('pane_RainWaterHarvestingStructure_13').style.zIndex = 413;
+        map.getPane('pane_RainWaterHarvestingStructure_13').style['mix-blend-mode'] = 'normal';
+        var layer_RainWaterHarvestingStructure_13 = new L.geoJson(json_RainWaterHarvestingStructure_13, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_RainWaterHarvestingStructure_13',
+            layerName: 'layer_RainWaterHarvestingStructure_13',
+            pane: 'pane_RainWaterHarvestingStructure_13',
+            onEachFeature: pop_RainWaterHarvestingStructure_13,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_RainWaterHarvestingStructure_13_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_RainWaterHarvestingStructure_13);
+        map.addLayer(layer_RainWaterHarvestingStructure_13);
+        function pop_Dip_14(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">name</th>\
+                        <td>' + (feature.properties['name'] !== null ? autolinker.link(feature.properties['name'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Code</th>\
+                        <td>' + (feature.properties['Code'] !== null ? autolinker.link(feature.properties['Code'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Road</th>\
+                        <td>' + (feature.properties['Road'] !== null ? autolinker.link(feature.properties['Road'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Ward</th>\
+                        <td>' + (feature.properties['Ward'] !== null ? autolinker.link(feature.properties['Ward'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">XCOORD</th>\
+                        <td>' + (feature.properties['XCOORD'] !== null ? autolinker.link(feature.properties['XCOORD'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">YCOORD</th>\
+                        <td>' + (feature.properties['YCOORD'] !== null ? autolinker.link(feature.properties['YCOORD'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Dip_14_0() {
+            return {
+                pane: 'pane_Dip_14',
+                radius: 3.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(164,113,88,1.0)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_Dip_14');
+        map.getPane('pane_Dip_14').style.zIndex = 414;
+        map.getPane('pane_Dip_14').style['mix-blend-mode'] = 'normal';
+        var layer_Dip_14 = new L.geoJson(json_Dip_14, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_Dip_14',
+            layerName: 'layer_Dip_14',
+            pane: 'pane_Dip_14',
+            onEachFeature: pop_Dip_14,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_Dip_14_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_Dip_14);
+        map.addLayer(layer_Dip_14);
+        function pop_AnganavadiRent_15(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Name</th>\
+                        <td>' + (feature.properties['Name'] !== null ? autolinker.link(feature.properties['Name'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Ward</th>\
+                        <td>' + (feature.properties['Ward'] !== null ? autolinker.link(feature.properties['Ward'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Code</th>\
+                        <td>' + (feature.properties['Code'] !== null ? autolinker.link(feature.properties['Code'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Road_Name</th>\
+                        <td>' + (feature.properties['Road_Name'] !== null ? autolinker.link(feature.properties['Road_Name'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">XCOORD</th>\
+                        <td>' + (feature.properties['XCOORD'] !== null ? autolinker.link(feature.properties['XCOORD'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">YCOORD</th>\
+                        <td>' + (feature.properties['YCOORD'] !== null ? autolinker.link(feature.properties['YCOORD'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_AnganavadiRent_15_0() {
+            return {
+                pane: 'pane_AnganavadiRent_15',
+                radius: 3.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(152,125,183,1.0)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_AnganavadiRent_15');
+        map.getPane('pane_AnganavadiRent_15').style.zIndex = 415;
+        map.getPane('pane_AnganavadiRent_15').style['mix-blend-mode'] = 'normal';
+        var layer_AnganavadiRent_15 = new L.geoJson(json_AnganavadiRent_15, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_AnganavadiRent_15',
+            layerName: 'layer_AnganavadiRent_15',
+            pane: 'pane_AnganavadiRent_15',
+            onEachFeature: pop_AnganavadiRent_15,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_AnganavadiRent_15_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_AnganavadiRent_15);
+        map.addLayer(layer_AnganavadiRent_15);
+        function pop_MastLight_16(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Name</th>\
+                        <td>' + (feature.properties['Name'] !== null ? autolinker.link(feature.properties['Name'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Ward</th>\
+                        <td>' + (feature.properties['Ward'] !== null ? autolinker.link(feature.properties['Ward'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Code</th>\
+                        <td>' + (feature.properties['Code'] !== null ? autolinker.link(feature.properties['Code'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Road_Name</th>\
+                        <td>' + (feature.properties['Road_Name'] !== null ? autolinker.link(feature.properties['Road_Name'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">XCOORD</th>\
+                        <td>' + (feature.properties['XCOORD'] !== null ? autolinker.link(feature.properties['XCOORD'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">YCOORD</th>\
+                        <td>' + (feature.properties['YCOORD'] !== null ? autolinker.link(feature.properties['YCOORD'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Location</th>\
+                        <td>' + (feature.properties['Location'] !== null ? autolinker.link(feature.properties['Location'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_MastLight_16_0() {
+            return {
+                pane: 'pane_MastLight_16',
+                radius: 3.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,158,23,1.0)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_MastLight_16');
+        map.getPane('pane_MastLight_16').style.zIndex = 416;
+        map.getPane('pane_MastLight_16').style['mix-blend-mode'] = 'normal';
+        var layer_MastLight_16 = new L.geoJson(json_MastLight_16, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_MastLight_16',
+            layerName: 'layer_MastLight_16',
+            pane: 'pane_MastLight_16',
+            onEachFeature: pop_MastLight_16,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_MastLight_16_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_MastLight_16);
+        map.addLayer(layer_MastLight_16);
+        function pop_BabyFriendlyToilet_17(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Name</th>\
+                        <td>' + (feature.properties['Name'] !== null ? autolinker.link(feature.properties['Name'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Ward</th>\
+                        <td>' + (feature.properties['Ward'] !== null ? autolinker.link(feature.properties['Ward'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Code</th>\
+                        <td>' + (feature.properties['Code'] !== null ? autolinker.link(feature.properties['Code'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Road_Name</th>\
+                        <td>' + (feature.properties['Road_Name'] !== null ? autolinker.link(feature.properties['Road_Name'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Dimension</th>\
+                        <td>' + (feature.properties['Dimension'] !== null ? autolinker.link(feature.properties['Dimension'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Location</th>\
+                        <td>' + (feature.properties['Location'] !== null ? autolinker.link(feature.properties['Location'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">XCOORD</th>\
+                        <td>' + (feature.properties['XCOORD'] !== null ? autolinker.link(feature.properties['XCOORD'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">YCOORD</th>\
+                        <td>' + (feature.properties['YCOORD'] !== null ? autolinker.link(feature.properties['YCOORD'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_BabyFriendlyToilet_17_0() {
+            return {
+                pane: 'pane_BabyFriendlyToilet_17',
+                radius: 3.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(243,166,178,1.0)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_BabyFriendlyToilet_17');
+        map.getPane('pane_BabyFriendlyToilet_17').style.zIndex = 417;
+        map.getPane('pane_BabyFriendlyToilet_17').style['mix-blend-mode'] = 'normal';
+        var layer_BabyFriendlyToilet_17 = new L.geoJson(json_BabyFriendlyToilet_17, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_BabyFriendlyToilet_17',
+            layerName: 'layer_BabyFriendlyToilet_17',
+            pane: 'pane_BabyFriendlyToilet_17',
+            onEachFeature: pop_BabyFriendlyToilet_17,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_BabyFriendlyToilet_17_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_BabyFriendlyToilet_17);
+        map.addLayer(layer_BabyFriendlyToilet_17);
+        function pop_Node_18(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Node_Numbe</th>\
+                        <td>' + (feature.properties['Node_Numbe'] !== null ? autolinker.link(feature.properties['Node_Numbe'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Ward</th>\
+                        <td>' + (feature.properties['Ward'] !== null ? autolinker.link(feature.properties['Ward'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Node_18_0() {
+            return {
+                pane: 'pane_Node_18',
+                radius: 3.0,
+                opacity: 1,
+                color: 'rgba(0,0,0,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,255,255,1.0)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_Node_18');
+        map.getPane('pane_Node_18').style.zIndex = 418;
+        map.getPane('pane_Node_18').style['mix-blend-mode'] = 'normal';
+        var layer_Node_18 = new L.geoJson(json_Node_18, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_Node_18',
+            layerName: 'layer_Node_18',
+            pane: 'pane_Node_18',
+            onEachFeature: pop_Node_18,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_Node_18_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_Node_18);
+        map.addLayer(layer_Node_18);
+        var osmGeocoder = new L.Control.Geocoder({
+            collapsed: true,
+            position: 'topleft',
+            text: 'Search',
+            title: 'Testing'
+        }).addTo(map);
+        document.getElementsByClassName('leaflet-control-geocoder-icon')[0]
+        .className += ' fa fa-search';
+        document.getElementsByClassName('leaflet-control-geocoder-icon')[0]
+        .title += 'Search for a place';
+        var overlaysTree = [
+            {label: '<img src="legend/Node_18.png" /> Node', layer: layer_Node_18},
+            {label: '<img src="legend/BabyFriendlyToilet_17.png" /> Baby Friendly Toilet', layer: layer_BabyFriendlyToilet_17},
+            {label: '<img src="legend/MastLight_16.png" /> Mast Light', layer: layer_MastLight_16},
+            {label: '<img src="legend/AnganavadiRent_15.png" /> Anganavadi Rent', layer: layer_AnganavadiRent_15},
+            {label: '<img src="legend/Dip_14.png" /> Dip', layer: layer_Dip_14},
+            {label: '<img src="legend/RainWaterHarvestingStructure_13.png" /> Rain Water Harvesting Structure', layer: layer_RainWaterHarvestingStructure_13},
+            {label: '<img src="legend/Culvert_12.png" /> Culvert', layer: layer_Culvert_12},
+            {label: '<img src="legend/Bridge_11.png" /> Bridge', layer: layer_Bridge_11},
+            {label: '<img src="legend/OpenWell_10.png" /> Open Well', layer: layer_OpenWell_10},
+            {label: '<img src="legend/ProposedCulvertSite_9.png" /> Proposed Culvert Site', layer: layer_ProposedCulvertSite_9},
+            {label: '<img src="legend/BottleBooth_8.png" /> Bottle Booth', layer: layer_BottleBooth_8},
+            {label: '<img src="legend/Birm_7.png" /> Birm', layer: layer_Birm_7},
+            {label: '<img src="legend/Road_6.png" /> Road', layer: layer_Road_6},
+            {label: '<img src="legend/DrainagePWall_5.png" /> Drainage&PWall', layer: layer_DrainagePWall_5},
+            {label: '<img src="legend/Stream_4.png" /> Stream', layer: layer_Stream_4},
+            {label: '<img src="legend/PWDDistrictPanRoad_3.png" /> PWD&DistrictPanRoad', layer: layer_PWDDistrictPanRoad_3},
+            {label: '<img src="legend/PublicPond_2.png" /> Public Pond', layer: layer_PublicPond_2},
+            {label: '<img src="legend/PublicBuilding_1.png" /> Public Building', layer: layer_PublicBuilding_1},
+            {label: "Google Satellite", layer: layer_GoogleSatellite_0},]
+        var lay = L.control.layers.tree(null, overlaysTree,{
+            //namedToggle: true,
+            //selectorBack: false,
+            //closedSymbol: '&#8862; &#x1f5c0;',
+            //openedSymbol: '&#8863; &#x1f5c1;',
+            //collapseAll: 'Collapse all',
+            //expandAll: 'Expand all',
+            collapsed: true,
+        });
+        lay.addTo(map);
+        setBounds();
+         var searchControl = new L.Control.Search({
+    layer: layer_Road_6,
+    initial: false,
+    hideMarkerOnCollapse: true,
+    propertyName: 'road_name',
+    moveToLocation: function (latlng, title, map) {
+        // Create a marker at the searched location
+        var marker = L.marker(latlng, {
+            title: title,
+            icon: L.divIcon({ className: 'custom-marker', html: '<b style="color: yellow; red; font-size: 20px;">' + title + '</b>' })
+        });
+
+        // Add the marker to the map
+        marker.addTo(map);
+
+        // Zoom to the location
+        map.setView(latlng, 17);  // Adjust the zoom level as needed
+
+        // Remove the marker after 3 seconds (adjust the delay as needed)
+        setTimeout(function () {
+            map.removeLayer(marker);
+        }, 3000);  // 3000 milliseconds = 3 seconds
+    }
+});
+
+map.addControl(searchControl);
+// Use CSS to position the control to the bottom-right corner
+var searchControlContainer = searchControl.getContainer();
+searchControlContainer.style.position = 'nill';
+searchControlContainer.style.top = 'nill';
+searchControlContainer.style.right = 'nill';
+searchControlContainer.style.zIndex = '1005';  // Higher z-index
+// Add the binoculars icon class
+var binocularsIcon = document.getElementsByClassName('search-button')[0];
+binocularsIcon.className += ' fa fa-binoculars';
+binocularsIcon.className += ' fa fa-binoculars';
+binocularsIcon.style.position = 'nill';
+binocularsIcon.style.top = 'nill'; // Adjust the percentage as needed
+binocularsIcon.style.left = 'nill'; // Adjust the percentage as needed
+// Create a text box element
+var textBox = document.createElement('input');
+textBox.type = 'text';
+textBox.value = '< road search';
+textBox.style.width = '85px'; // Adjust the width as needed
+textBox.style.height = '25px'; // Adjust the height as needed
+// Append the text box next to the binoculars icon
+binocularsIcon.parentNode.appendChild(textBox);
+var searchControl = new L.Control.Search({
+    layer: layer_PublicBuilding_1,
+    initial: false,
+    hideMarkerOnCollapse: true,
+    propertyName: 'build_name',
+    moveToLocation: function (latlng, title, map) {
+        // Create a marker at the searched location
+        var marker = L.marker(latlng, {
+            title: title,
+            icon: L.divIcon({ className: 'custom-marker', html: '<b style="color: yellow; red; font-size: 20px;">' + title + '</b>' })
+        });
+
+        // Add the marker to the map
+        marker.addTo(map);
+
+        // Zoom to the location
+        map.setView(latlng, 17);  // Adjust the zoom level as needed
+
+        // Remove the marker after 3 seconds (adjust the delay as needed)
+        setTimeout(function () {
+            map.removeLayer(marker);
+        }, 3000);  // 3000 milliseconds = 3 seconds
+    }
+});
+
+map.addControl(searchControl);
+// Use CSS to position the control to the bottom-right corner
+var searchControlContainer = searchControl.getContainer();
+searchControlContainer.style.position = 'nill';
+searchControlContainer.style.top = 'nill';
+searchControlContainer.style.right = 'nill';
+searchControlContainer.style.zIndex = '1004';  // Higher z-index
+// Add the binoculars icon class
+var binocularsIcon = document.getElementsByClassName('search-button')[1];
+binocularsIcon.className += ' fa fa-binoculars';
+binocularsIcon.className += ' fa fa-binoculars';
+binocularsIcon.style.position = 'nill';
+binocularsIcon.style.top = 'nill'; // Adjust the percentage as needed
+binocularsIcon.style.left = 'nill'; // Adjust the percentage as needed
+// Create a text box element
+var textBox = document.createElement('input');
+textBox.type = 'text';
+textBox.value = '< buildsearch';
+textBox.style.width = '85px'; // Adjust the width as needed
+textBox.style.height = '25px'; // Adjust the height as needed
+// Append the text box next to the binoculars icon
+binocularsIcon.parentNode.appendChild(textBox);
+var searchControl = new L.Control.Search({
+    layer: layer_OpenWell_10,
+    initial: false,
+    hideMarkerOnCollapse: true,
+    propertyName: 'well_name',
+    moveToLocation: function (latlng, title, map) {
+        // Create a marker at the searched location
+        var marker = L.marker(latlng, {
+            title: title,
+            icon: L.divIcon({ className: 'custom-marker', html: '<b style="color: yellow; red; font-size: 20px;">' + title + '</b>' })
+        });
+
+        // Add the marker to the map
+        marker.addTo(map);
+
+        // Zoom to the location
+        map.setView(latlng, 17);  // Adjust the zoom level as needed
+
+        // Remove the marker after 3 seconds (adjust the delay as needed)
+        setTimeout(function () {
+            map.removeLayer(marker);
+        }, 3000);  // 3000 milliseconds = 3 seconds
+    }
+});
+
+map.addControl(searchControl);
+// Use CSS to position the control to the bottom-right corner
+var searchControlContainer = searchControl.getContainer();
+searchControlContainer.style.position = 'nill';
+searchControlContainer.style.top = 'nill';
+searchControlContainer.style.right = 'nill';
+searchControlContainer.style.zIndex = '1003';  // Higher z-index
+// Add the binoculars icon class
+var binocularsIcon = document.getElementsByClassName('search-button')[2];
+binocularsIcon.className += ' fa fa-binoculars';
+binocularsIcon.className += ' fa fa-binoculars';
+binocularsIcon.style.position = 'nill';
+binocularsIcon.style.top = 'nill'; // Adjust the percentage as needed
+binocularsIcon.style.left = 'nill'; // Adjust the percentage as needed
+// Create a text box element
+var textBox = document.createElement('input');
+textBox.type = 'text';
+textBox.value = '<wellsearch';
+textBox.style.width = '85px'; // Adjust the width as needed
+textBox.style.height = '25px'; // Adjust the height as needed
+// Append the text box next to the binoculars icon
+binocularsIcon.parentNode.appendChild(textBox);
+var searchControl = new L.Control.Search({
+    layer: layer_Bridge_11,
+    initial: false,
+    hideMarkerOnCollapse: true,
+    propertyName: 'bridge_nam',
+    moveToLocation: function (latlng, title, map) {
+        // Create a marker at the searched location
+        var marker = L.marker(latlng, {
+            title: title,
+            icon: L.divIcon({ className: 'custom-marker', html: '<b style="color: yellow; red; font-size: 20px;">' + title + '</b>' })
+        });
+
+        // Add the marker to the map
+        marker.addTo(map);
+
+        // Zoom to the location
+        map.setView(latlng, 17);  // Adjust the zoom level as needed
+
+        // Remove the marker after 3 seconds (adjust the delay as needed)
+        setTimeout(function () {
+            map.removeLayer(marker);
+        }, 3000);  // 3000 milliseconds = 3 seconds
+    }
+});
+
+map.addControl(searchControl);
+// Use CSS to position the control to the bottom-right corner
+var searchControlContainer = searchControl.getContainer();
+searchControlContainer.style.position = 'nill';
+searchControlContainer.style.top = 'nill';
+searchControlContainer.style.right = 'nill';
+searchControlContainer.style.zIndex = '1002';  // Higher z-index
+// Add the binoculars icon class
+var binocularsIcon = document.getElementsByClassName('search-button')[3];
+binocularsIcon.className += ' fa fa-binoculars';
+binocularsIcon.className += ' fa fa-binoculars';
+binocularsIcon.style.position = 'nill';
+binocularsIcon.style.top = 'nill'; // Adjust the percentage as needed
+binocularsIcon.style.left = 'nill'; // Adjust the percentage as needed
+// Create a text box element
+var textBox = document.createElement('input');
+textBox.type = 'text';
+textBox.value = '<bridgesearch';
+textBox.style.width = '85px'; // Adjust the width as needed
+textBox.style.height = '25px'; // Adjust the height as needed
+// Append the text box next to the binoculars icon
+binocularsIcon.parentNode.appendChild(textBox);
+        var mapDiv = document.getElementById('map');
+        var row = document.createElement('div');
+        row.className="row";
+        row.id="all";
+        row.style.height = "100%";
+        var col1 = document.createElement('div');
+        col1.className="col9";
+        col1.id = "mapWindow";
+        col1.style.height = "99%";
+        col1.style.width = "80%";
+        col1.style.display = "inline-block";
+        var col2 = document.createElement('div');
+        col2.className="col3";
+        col2.id = "menu";
+        col2.style.display = "inline-block";
+        mapDiv.parentNode.insertBefore(row, mapDiv);
+        document.getElementById("all").appendChild(col1);
+        document.getElementById("all").appendChild(col2);
+        col1.appendChild(mapDiv)
+        var Filters = {"road_ward": "str","road_name": "str","road_stype": "str"};
+        function filterFunc() {
+          map.eachLayer(function(lyr){
+          if ("options" in lyr && "dataVar" in lyr["options"]){
+            features = this[lyr["options"]["dataVar"]].features.slice(0);
+            try{
+              for (key in Filters){
+                keyS = key.replace(/[^a-zA-Z0-9_]/g, "")
+                if (Filters[key] == "str" || Filters[key] == "bool"){
+                  var selection = [];
+                  var options = document.getElementById("sel_" + keyS).options
+                  for (var i=0; i < options.length; i++) {
+                    if (options[i].selected) selection.push(options[i].value);
+                  }
+                    try{
+                      if (key in features[0].properties){
+                        for (i = features.length - 1;
+                          i >= 0; --i){
+                          if (selection.indexOf(
+                          features[i].properties[key])<0
+                          && selection.length>0) {
+                          features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                  }
+                }
+                if (Filters[key] == "int"){
+                  sliderVals =  document.getElementById(
+                    "div_" + keyS).noUiSlider.get();
+                  try{
+                    if (key in features[0].properties){
+                    for (i = features.length - 1; i >= 0; --i){
+                      if (parseInt(features[i].properties[key])
+                          < sliderVals[0]
+                          || parseInt(features[i].properties[key])
+                          > sliderVals[1]){
+                            features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                    }
+                  }
+                if (Filters[key] == "real"){
+                  sliderVals =  document.getElementById(
+                    "div_" + keyS).noUiSlider.get();
+                  try{
+                    if (key in features[0].properties){
+                    for (i = features.length - 1; i >= 0; --i){
+                      if (features[i].properties[key]
+                          < sliderVals[0]
+                          || features[i].properties[key]
+                          > sliderVals[1]){
+                            features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                    }
+                  }
+                if (Filters[key] == "date"
+                  || Filters[key] == "datetime"
+                  || Filters[key] == "time"){
+                  try{
+                    if (key in features[0].properties){
+                      HTMLkey = key.replace(/[&\/\\#,+()$~%.'":*?<>{} ]/g, '');
+                      startdate = document.getElementById("dat_" +
+                        HTMLkey + "_date1").value.replace(" ", "T");
+                      enddate = document.getElementById("dat_" +
+                        HTMLkey + "_date2").value.replace(" ", "T");
+                      for (i = features.length - 1; i >= 0; --i){
+                        if (features[i].properties[key] < startdate
+                          || features[i].properties[key] > enddate){
+                          features.splice(i,1);
+                        }
+                      }
+                    }
+                  } catch(err){
+                  }
+                }
+              }
+            } catch(err){
+            }
+          this[lyr["options"]["layerName"]].clearLayers();
+          this[lyr["options"]["layerName"]].addData(features);
+          }
+          })
+        }
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_road_ward = document.createElement('div');
+            div_road_ward.id = "div_road_ward";
+            div_road_ward.className= "filterselect";
+            document.getElementById("menu").appendChild(div_road_ward);
+            sel_road_ward = document.createElement('select');
+            sel_road_ward.multiple = true;
+            sel_road_ward.size = 4;
+            sel_road_ward.id = "sel_road_ward";
+            var road_ward_options_str = "";
+            sel_road_ward.onchange = function(){filterFunc()};
+            road_ward_options_str  += '<option value="1">1</option>';
+            road_ward_options_str  += '<option value="10">10</option>';
+            road_ward_options_str  += '<option value="11">11</option>';
+            road_ward_options_str  += '<option value="12">12</option>';
+            road_ward_options_str  += '<option value="13">13</option>';
+            road_ward_options_str  += '<option value="2">2</option>';
+            road_ward_options_str  += '<option value="3">3</option>';
+            road_ward_options_str  += '<option value="4">4</option>';
+            road_ward_options_str  += '<option value="5">5</option>';
+            road_ward_options_str  += '<option value="6">6</option>';
+            road_ward_options_str  += '<option value="7">7</option>';
+            road_ward_options_str  += '<option value="8">8</option>';
+            road_ward_options_str  += '<option value="9">9</option>';
+            sel_road_ward.innerHTML = road_ward_options_str;
+            div_road_ward.appendChild(sel_road_ward);
+            var lab_road_ward = document.createElement('div');
+            lab_road_ward.innerHTML = 'road_ward';
+            lab_road_ward.className = 'filterlabel';
+            div_road_ward.appendChild(lab_road_ward);
+            var reset_road_ward = document.createElement('div');
+            reset_road_ward.innerHTML = 'clear filter';
+            reset_road_ward.className = 'filterlabel';
+            reset_road_ward.onclick = function() {
+                var options = document.getElementById("sel_road_ward").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_road_ward.appendChild(reset_road_ward);
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_road_name = document.createElement('div');
+            div_road_name.id = "div_road_name";
+            div_road_name.className= "filterselect";
+            document.getElementById("menu").appendChild(div_road_name);
+            sel_road_name = document.createElement('select');
+            sel_road_name.multiple = true;
+            sel_road_name.size = 4;
+            sel_road_name.id = "sel_road_name";
+            var road_name_options_str = "";
+            sel_road_name.onchange = function(){filterFunc()};
+            road_name_options_str  += '<option value="110 Nettithara Colony Road">110 Nettithara Colony Road</option>';
+            road_name_options_str  += '<option value="110 Nettithara Parayil Colony Road">110 Nettithara Parayil Colony Road</option>';
+            road_name_options_str  += '<option value="110 Palam Puthuppalli Thekke Palam Road">110 Palam Puthuppalli Thekke Palam Road</option>';
+            road_name_options_str  += '<option value="5 Acre Harijan Colony Road">5 Acre Harijan Colony Road</option>';
+            road_name_options_str  += '<option value="APJ Abdul Kalam Nadappatha">APJ Abdul Kalam Nadappatha</option>';
+            road_name_options_str  += '<option value="Akathamthara Chenthuruthu Pulaya Colony Road">Akathamthara Chenthuruthu Pulaya Colony Road</option>';
+            road_name_options_str  += '<option value="Akathamthara Chenthuruthu Road">Akathamthara Chenthuruthu Road</option>';
+            road_name_options_str  += '<option value="Akathamthara Mathirampalli Nadappatha">Akathamthara Mathirampalli Nadappatha</option>';
+            road_name_options_str  += '<option value="Alinchuvadu Ekkammel Padasekharam Road">Alinchuvadu Ekkammel Padasekharam Road</option>';
+            road_name_options_str  += '<option value="Arakkal Puthupparambil Nadappatha">Arakkal Puthupparambil Nadappatha</option>';
+            road_name_options_str  += '<option value="Arattukulam Krishna Nivas Nadappatha">Arattukulam Krishna Nivas Nadappatha</option>';
+            road_name_options_str  += '<option value="Arattukulam Vishakh Bhavan Nadappatha">Arattukulam Vishakh Bhavan Nadappatha</option>';
+            road_name_options_str  += '<option value="Asharikandam Karichal Chira Nadappatha">Asharikandam Karichal Chira Nadappatha</option>';
+            road_name_options_str  += '<option value="Attupuram Kunnumpuram Nadappatha">Attupuram Kunnumpuram Nadappatha</option>';
+            road_name_options_str  += '<option value="Attupuram Mundamattam Nadappatha">Attupuram Mundamattam Nadappatha</option>';
+            road_name_options_str  += '<option value="Attupuram Pazhangarithazham Road">Attupuram Pazhangarithazham Road</option>';
+            road_name_options_str  += '<option value="Attupurum Kulangaramyalil Road">Attupurum Kulangaramyalil Road</option>';
+            road_name_options_str  += '<option value="Bhadra Devi Kshethram HWLPS Road">Bhadra Devi Kshethram HWLPS Road</option>';
+            road_name_options_str  += '<option value="Bindu Nursing Home Pallithazham Road">Bindu Nursing Home Pallithazham Road</option>';
+            road_name_options_str  += '<option value="CSI Palli Mukhthappalli Road">CSI Palli Mukhthappalli Road</option>';
+            road_name_options_str  += '<option value="Chandanappuram Padippurakkal Nadappatha">Chandanappuram Padippurakkal Nadappatha</option>';
+            road_name_options_str  += '<option value="Chanthapparambu Anganavadi Nadappatha">Chanthapparambu Anganavadi Nadappatha</option>';
+            road_name_options_str  += '<option value="Chanthapparambu Puthenpurakkal Road">Chanthapparambu Puthenpurakkal Road</option>';
+            road_name_options_str  += '<option value="Cherikkal Manalethazham Road">Cherikkal Manalethazham Road</option>';
+            road_name_options_str  += '<option value="Cherikkal Pozhiparambu Nadappatha">Cherikkal Pozhiparambu Nadappatha</option>';
+            road_name_options_str  += '<option value="Cherivil Puthenpurayil Mundakkalparambu Road">Cherivil Puthenpurayil Mundakkalparambu Road</option>';
+            road_name_options_str  += '<option value="Chettuparambil Aikkarapparambil Road">Chettuparambil Aikkarapparambil Road</option>';
+            road_name_options_str  += '<option value="Chirappadam Karukappara Road">Chirappadam Karukappara Road</option>';
+            road_name_options_str  += '<option value="Choorakkuzhi Valiyakadavuthazham Road">Choorakkuzhi Valiyakadavuthazham Road</option>';
+            road_name_options_str  += '<option value="Choorakkuzhi Varavukala Road">Choorakkuzhi Varavukala Road</option>';
+            road_name_options_str  += '<option value="Choorathuruthel Nedumthuruthil Puthenpurayil Road">Choorathuruthel Nedumthuruthil Puthenpurayil Road</option>';
+            road_name_options_str  += '<option value="Chooravelikudilil Lakshanathuparambu Road">Chooravelikudilil Lakshanathuparambu Road</option>';
+            road_name_options_str  += '<option value="Chooravelil Sandra Nadappatha">Chooravelil Sandra Nadappatha</option>';
+            road_name_options_str  += '<option value="Chozhikkara Ambalapparambu Road">Chozhikkara Ambalapparambu Road</option>';
+            road_name_options_str  += '<option value="Chozhikkara Karukappara Road">Chozhikkara Karukappara Road</option>';
+            road_name_options_str  += '<option value="Deepavali Moolekarottu Road">Deepavali Moolekarottu Road</option>';
+            road_name_options_str  += '<option value="Deshasevini Arattukulam Road">Deshasevini Arattukulam Road</option>';
+            road_name_options_str  += '<option value="Deshasevini Chathurapparambil Nadappatha">Deshasevini Chathurapparambil Nadappatha</option>';
+            road_name_options_str  += '<option value="Deshasevini Vadakaraparambu Road">Deshasevini Vadakaraparambu Road</option>';
+            road_name_options_str  += '<option value="Dhanwanthari Temple Chorathu Nadappatha">Dhanwanthari Temple Chorathu Nadappatha</option>';
+            road_name_options_str  += '<option value="Divan Thodu Onnam Number Road">Divan Thodu Onnam Number Road</option>';
+            road_name_options_str  += '<option value="Eadttupadi Aappuzha Thodu Road">Eadttupadi Aappuzha Thodu Road</option>';
+            road_name_options_str  += '<option value="Edattupadi Vadakkedathu Vadakkepparambu Nadappatha">Edattupadi Vadakkedathu Vadakkepparambu Nadappatha</option>';
+            road_name_options_str  += '<option value="Erathara Kunchuthara Road">Erathara Kunchuthara Road</option>';
+            road_name_options_str  += '<option value="Gandhi Ashramam Cherumalathazham Road">Gandhi Ashramam Cherumalathazham Road</option>';
+            road_name_options_str  += '<option value="Government Ayurveda Hospital Road">Government Ayurveda Hospital Road</option>';
+            road_name_options_str  += '<option value="Government LP School Road">Government LP School Road</option>';
+            road_name_options_str  += '<option value="Gurumandiram Thottithazham Road">Gurumandiram Thottithazham Road</option>';
+            road_name_options_str  += '<option value="HWLPS Durga Devi Kshethram Road">HWLPS Durga Devi Kshethram Road</option>';
+            road_name_options_str  += '<option value="HWLPS Pothalam Road">HWLPS Pothalam Road</option>';
+            road_name_options_str  += '<option value="Harijan Colony Nadappatha">Harijan Colony Nadappatha</option>';
+            road_name_options_str  += '<option value="Idathil Karottu Nadappatha">Idathil Karottu Nadappatha</option>';
+            road_name_options_str  += '<option value="Idayadithazham Moolithodu Road">Idayadithazham Moolithodu Road</option>';
+            road_name_options_str  += '<option value="Idayadithazham Padinjappurathu Valiyakari Nadappatha">Idayadithazham Padinjappurathu Valiyakari Nadappatha</option>';
+            road_name_options_str  += '<option value="Jayanthi Kottoopparambuthazham Road">Jayanthi Kottoopparambuthazham Road</option>';
+            road_name_options_str  += '<option value="Jayanthi Mangalathuthazham Nadappatha">Jayanthi Mangalathuthazham Nadappatha</option>';
+            road_name_options_str  += '<option value="Kakkathuruthu Palam Ekkamma Padasekharm Nadappatha">Kakkathuruthu Palam Ekkamma Padasekharm Nadappatha</option>';
+            road_name_options_str  += '<option value="Kalambukadu Aikkarathazham Road">Kalambukadu Aikkarathazham Road</option>';
+            road_name_options_str  += '<option value="Kalambukadu Kadavu Road">Kalambukadu Kadavu Road</option>';
+            road_name_options_str  += '<option value="Kalambukadu Meenchira Road">Kalambukadu Meenchira Road</option>';
+            road_name_options_str  += '<option value="Kalambukadu Muttathuvala Road">Kalambukadu Muttathuvala Road</option>';
+            road_name_options_str  += '<option value="Kalappurakkal Kanjirappilli Road">Kalappurakkal Kanjirappilli Road</option>';
+            road_name_options_str  += '<option value="Kalappurakkal Kochu Puthenpurakkal Road">Kalappurakkal Kochu Puthenpurakkal Road</option>';
+            road_name_options_str  += '<option value="Kalappurathazham Mahilamandiram Road">Kalappurathazham Mahilamandiram Road</option>';
+            road_name_options_str  += '<option value="Kallukadavil Parayil Nadappatha">Kallukadavil Parayil Nadappatha</option>';
+            road_name_options_str  += '<option value="Kallukadavu Sandra Road">Kallukadavu Sandra Road</option>';
+            road_name_options_str  += '<option value="Kallumada Savio Nadappatha">Kallumada Savio Nadappatha</option>';
+            road_name_options_str  += '<option value="Kalpakasserimadam Ashramam Nadappatha">Kalpakasserimadam Ashramam Nadappatha</option>';
+            road_name_options_str  += '<option value="Kareethara Nadappatha">Kareethara Nadappatha</option>';
+            road_name_options_str  += '<option value="Karinattupadi Gurunadha Kshethram Road">Karinattupadi Gurunadha Kshethram Road</option>';
+            road_name_options_str  += '<option value="Kattathu Mandapam Road">Kattathu Mandapam Road</option>';
+            road_name_options_str  += '<option value="Kattathuvalayil Madhuramcheri Road">Kattathuvalayil Madhuramcheri Road</option>';
+            road_name_options_str  += '<option value="Kattathuvalel Malekkal Chira Road">Kattathuvalel Malekkal Chira Road</option>';
+            road_name_options_str  += '<option value="Kattathuvalel Palakkattu Road">Kattathuvalel Palakkattu Road</option>';
+            road_name_options_str  += '<option value="Kavikkunnu Kottoopparambu Road">Kavikkunnu Kottoopparambu Road</option>';
+            road_name_options_str  += '<option value="Kavimattam 4 Cent Colony Nadappatha">Kavimattam 4 Cent Colony Nadappatha</option>';
+            road_name_options_str  += '<option value="Kavimattam 4 Cent Colony Road">Kavimattam 4 Cent Colony Road</option>';
+            road_name_options_str  += '<option value="Kavimattam Kothavarayil Nadappatha">Kavimattam Kothavarayil Nadappatha</option>';
+            road_name_options_str  += '<option value="Kavimattam Laksham Veedu Colony Road">Kavimattam Laksham Veedu Colony Road</option>';
+            road_name_options_str  += '<option value="Kizhakke Puthussery Tharethazham Road">Kizhakke Puthussery Tharethazham Road</option>';
+            road_name_options_str  += '<option value="Kizhakkekkattipparambu Kottayil Thodu Road">Kizhakkekkattipparambu Kottayil Thodu Road</option>';
+            road_name_options_str  += '<option value="Kizhakkeparambu Kurichiparambu Nadappatha">Kizhakkeparambu Kurichiparambu Nadappatha</option>';
+            road_name_options_str  += '<option value="Kochathupadi Ekkamma Road">Kochathupadi Ekkamma Road</option>';
+            road_name_options_str  += '<option value="Koladapparambu 4 Cent Colony Road">Koladapparambu 4 Cent Colony Road</option>';
+            road_name_options_str  += '<option value="Kollamkadavu Ezhupara Road">Kollamkadavu Ezhupara Road</option>';
+            road_name_options_str  += '<option value="Kollamkadavu Puthumandiram Nadappatha">Kollamkadavu Puthumandiram Nadappatha</option>';
+            road_name_options_str  += '<option value="Kollamkari Parayil Colony Road">Kollamkari Parayil Colony Road</option>';
+            road_name_options_str  += '<option value="Kollamparambu Aikkarapparambu Nadappatha">Kollamparambu Aikkarapparambu Nadappatha</option>';
+            road_name_options_str  += '<option value="Kollamparambu Maniyanthuruthu Road">Kollamparambu Maniyanthuruthu Road</option>';
+            road_name_options_str  += '<option value="Kollamparambu Maniyanthuruthu Road (Proposed)">Kollamparambu Maniyanthuruthu Road (Proposed)</option>';
+            road_name_options_str  += '<option value="Konattuparambu Mangalathuthazham Road">Konattuparambu Mangalathuthazham Road</option>';
+            road_name_options_str  += '<option value="Korattichira Parayil Colony Road">Korattichira Parayil Colony Road</option>';
+            road_name_options_str  += '<option value="Korattichira venthakari Kadathukadavu Road">Korattichira venthakari Kadathukadavu Road</option>';
+            road_name_options_str  += '<option value="Kothavarakkunnu 4 Cent Colony Road">Kothavarakkunnu 4 Cent Colony Road</option>';
+            road_name_options_str  += '<option value="Kothavarakkunnu Colony Road">Kothavarakkunnu Colony Road</option>';
+            road_name_options_str  += '<option value="Kothavarakkunnu Smashanam Nadappatha">Kothavarakkunnu Smashanam Nadappatha</option>';
+            road_name_options_str  += '<option value="Kottayil Junction Nagavallithazham Road">Kottayil Junction Nagavallithazham Road</option>';
+            road_name_options_str  += '<option value="Kudilithazham Chorathuthazham Road">Kudilithazham Chorathuthazham Road</option>';
+            road_name_options_str  += '<option value="Kudiyammasseril Aikkarapparambil Nadappatha">Kudiyammasseril Aikkarapparambil Nadappatha</option>';
+            road_name_options_str  += '<option value="Kulathil Chorathupurayidam Nadappatha">Kulathil Chorathupurayidam Nadappatha</option>';
+            road_name_options_str  += '<option value="Kunnakkattu Puthenpurayil Nadappatha">Kunnakkattu Puthenpurayil Nadappatha</option>';
+            road_name_options_str  += '<option value="Kunnappalli Mannanathukari Nadappatha">Kunnappalli Mannanathukari Nadappatha</option>';
+            road_name_options_str  += '<option value="Kunnel Puthethu Road">Kunnel Puthethu Road</option>';
+            road_name_options_str  += '<option value="Kunnukalappadi Mullamangalam Road">Kunnukalappadi Mullamangalam Road</option>';
+            road_name_options_str  += '<option value="Kunnumpuram Manalethazham Nadappatha">Kunnumpuram Manalethazham Nadappatha</option>';
+            road_name_options_str  += '<option value="Kunnumpurathu Kallumada Nadappatha">Kunnumpurathu Kallumada Nadappatha</option>';
+            road_name_options_str  += '<option value="Kurishupalli 36th Number Anganavadi Nadappatha">Kurishupalli 36th Number Anganavadi Nadappatha</option>';
+            road_name_options_str  += '<option value="Kurishupalli Chunkam Road">Kurishupalli Chunkam Road</option>';
+            road_name_options_str  += '<option value="Kurishupalli Illathuthazham Road">Kurishupalli Illathuthazham Road</option>';
+            road_name_options_str  += '<option value="Kurishupalli Illathuthazham Sub Road 1">Kurishupalli Illathuthazham Sub Road 1</option>';
+            road_name_options_str  += '<option value="Kurishupalli Illathuthazham Sub Road 2">Kurishupalli Illathuthazham Sub Road 2</option>';
+            road_name_options_str  += '<option value="Kurishupalli Kollamparambu Road">Kurishupalli Kollamparambu Road</option>';
+            road_name_options_str  += '<option value="Kurishupalli Parayil Road">Kurishupalli Parayil Road</option>';
+            road_name_options_str  += '<option value="Kurishupalli Thoppil Nadappatha">Kurishupalli Thoppil Nadappatha</option>';
+            road_name_options_str  += '<option value="Kurissupalli Ilayidathuthazham Road">Kurissupalli Ilayidathuthazham Road</option>';
+            road_name_options_str  += '<option value="Kurissupalli Kunnukalayil Nadappatha">Kurissupalli Kunnukalayil Nadappatha</option>';
+            road_name_options_str  += '<option value="Kurissupalli Valiyaparambu Colony Road">Kurissupalli Valiyaparambu Colony Road</option>';
+            road_name_options_str  += '<option value="Kuttikkattuthazham Thamarachal Karuvallithazham Road">Kuttikkattuthazham Thamarachal Karuvallithazham Road</option>';
+            road_name_options_str  += '<option value="Kuzhikkattuthazham Valethazham Road">Kuzhikkattuthazham Valethazham Road</option>';
+            road_name_options_str  += '<option value="Kuzhipparambu Vanchippurakkal Road">Kuzhipparambu Vanchippurakkal Road</option>';
+            road_name_options_str  += '<option value="Lakshanathuparambil Kudilil Nadappatha">Lakshanathuparambil Kudilil Nadappatha</option>';
+            road_name_options_str  += '<option value="Madathil Junction Muthirakkala Road">Madathil Junction Muthirakkala Road</option>';
+            road_name_options_str  += '<option value="Madathil Madathilparambu Nadappatha">Madathil Madathilparambu Nadappatha</option>';
+            road_name_options_str  += '<option value="Madhavappalli Laksham Veedu Road">Madhavappalli Laksham Veedu Road</option>';
+            road_name_options_str  += '<option value="Malekkal Varikkamthottiyil Road">Malekkal Varikkamthottiyil Road</option>';
+            road_name_options_str  += '<option value="Malekkaparambu Parayil Nadappatha">Malekkaparambu Parayil Nadappatha</option>';
+            road_name_options_str  += '<option value="Malekkaparambu Pozhiyil Nadappatha">Malekkaparambu Pozhiyil Nadappatha</option>';
+            road_name_options_str  += '<option value="Manakkattu Arivaram Road">Manakkattu Arivaram Road</option>';
+            road_name_options_str  += '<option value="Manalayil Manalethazham Nadappatha">Manalayil Manalethazham Nadappatha</option>';
+            road_name_options_str  += '<option value="Mandapathil Road">Mandapathil Road</option>';
+            road_name_options_str  += '<option value="Mandapathil Thekkeveettilthazham Nadappatha">Mandapathil Thekkeveettilthazham Nadappatha</option>';
+            road_name_options_str  += '<option value="Mangattupadi Valeppadi Road">Mangattupadi Valeppadi Road</option>';
+            road_name_options_str  += '<option value="Manikkavilasam Grandhashala NSS Higher Secondary School Road">Manikkavilasam Grandhashala NSS Higher Secondary School Road</option>';
+            road_name_options_str  += '<option value="Manimalapparambu Kizhakkebhagam Nadappatha">Manimalapparambu Kizhakkebhagam Nadappatha</option>';
+            road_name_options_str  += '<option value="Maniyanthuruthu Koduthuruthu Road">Maniyanthuruthu Koduthuruthu Road</option>';
+            road_name_options_str  += '<option value="Maniyanthuruthu Palli Kuzhippadavu Road">Maniyanthuruthu Palli Kuzhippadavu Road</option>';
+            road_name_options_str  += '<option value="Meenchira 9 Acre Nadappatha">Meenchira 9 Acre Nadappatha</option>';
+            road_name_options_str  += '<option value="Meenchira Thayyil Padam Road">Meenchira Thayyil Padam Road</option>';
+            road_name_options_str  += '<option value="Moolayil Thadathil Nadappatha">Moolayil Thadathil Nadappatha</option>';
+            road_name_options_str  += '<option value="Moolepparambu Moolekkarottu Nadappatha">Moolepparambu Moolekkarottu Nadappatha</option>';
+            road_name_options_str  += '<option value="Moolepparambu Nadappatha">Moolepparambu Nadappatha</option>';
+            road_name_options_str  += '<option value="Mukalel Bhagam Koottunkal Nadappatha">Mukalel Bhagam Koottunkal Nadappatha</option>';
+            road_name_options_str  += '<option value="Mullamangalam Club Malekkal Road">Mullamangalam Club Malekkal Road</option>';
+            road_name_options_str  += '<option value="Mullamangalam Edattu Road">Mullamangalam Edattu Road</option>';
+            road_name_options_str  += '<option value="Mullamangalam Edattuthazham Road">Mullamangalam Edattuthazham Road</option>';
+            road_name_options_str  += '<option value="Mullamangalam Padavathil Velamparambu Road">Mullamangalam Padavathil Velamparambu Road</option>';
+            road_name_options_str  += '<option value="Mullamangalam Palakkamattam Road">Mullamangalam Palakkamattam Road</option>';
+            road_name_options_str  += '<option value="Mundakakkunnel Palakkamattam Road">Mundakakkunnel Palakkamattam Road</option>';
+            road_name_options_str  += '<option value="Mundakakunnel Kavimattathil Road">Mundakakunnel Kavimattathil Road</option>';
+            road_name_options_str  += '<option value="Mundakakunnel Palakkamattam Road">Mundakakunnel Palakkamattam Road</option>';
+            road_name_options_str  += '<option value="Mundakkal Kakkanattu Road">Mundakkal Kakkanattu Road</option>';
+            road_name_options_str  += '<option value="Mundamattam Chittadithazham Road">Mundamattam Chittadithazham Road</option>';
+            road_name_options_str  += '<option value="Mundar Kalathrakkari Sahakarana Sangham Parayil Colony  Road">Mundar Kalathrakkari Sahakarana Sangham Parayil Colony  Road</option>';
+            road_name_options_str  += '<option value="Mundar Korattichira 4th Number Kadathukadavu Road">Mundar Korattichira 4th Number Kadathukadavu Road</option>';
+            road_name_options_str  += '<option value="Muthirakkala Edathil Nadappatha">Muthirakkala Edathil Nadappatha</option>';
+            road_name_options_str  += '<option value="Muthirakkala Valiyakadavu Thodu Nadappatha">Muthirakkala Valiyakadavu Thodu Nadappatha</option>';
+            road_name_options_str  += '<option value="Nadiyankunnel Parappurathu Road">Nadiyankunnel Parappurathu Road</option>';
+            road_name_options_str  += '<option value="Nadiyankunnel Valiyaparambu Nadappatha">Nadiyankunnel Valiyaparambu Nadappatha</option>';
+            road_name_options_str  += '<option value="Nediyakalayil Anganavadi Nadappatha">Nediyakalayil Anganavadi Nadappatha</option>';
+            road_name_options_str  += '<option value="Nedumthuruthil Madathilparambu Nadappatha">Nedumthuruthil Madathilparambu Nadappatha</option>';
+            road_name_options_str  += '<option value="Neerozhukkil Deshasevini Road">Neerozhukkil Deshasevini Road</option>';
+            road_name_options_str  += '<option value="Neerozhukkil Moolekkarottu Road">Neerozhukkil Moolekkarottu Road</option>';
+            road_name_options_str  += '<option value="Neerozhukkil Padi Panchayath Stadium Road">Neerozhukkil Padi Panchayath Stadium Road</option>';
+            road_name_options_str  += '<option value="Neerozhukkil Padi Ration Kada Nadappatha">Neerozhukkil Padi Ration Kada Nadappatha</option>';
+            road_name_options_str  += '<option value="Neerozhukkil Padi Tharethazham Road">Neerozhukkil Padi Tharethazham Road</option>';
+            road_name_options_str  += '<option value="Neerozhukkil Thekkekoattu Road">Neerozhukkil Thekkekoattu Road</option>';
+            road_name_options_str  += '<option value="Nehru Junction Kizhakke Chorathuthazham Road">Nehru Junction Kizhakke Chorathuthazham Road</option>';
+            road_name_options_str  += '<option value="Nehru Junction Perumthuruthu Kadavu Road">Nehru Junction Perumthuruthu Kadavu Road</option>';
+            road_name_options_str  += '<option value="Nehru Thottamthazhe Road">Nehru Thottamthazhe Road</option>';
+            road_name_options_str  += '<option value="Nellamparambu Laksham Veedu Colony Nadappatha">Nellamparambu Laksham Veedu Colony Nadappatha</option>';
+            road_name_options_str  += '<option value="Nellamparambu Lakshamveedu Colony Road">Nellamparambu Lakshamveedu Colony Road</option>';
+            road_name_options_str  += '<option value="Nethaji Subhash Chandra Bose Road">Nethaji Subhash Chandra Bose Road</option>';
+            road_name_options_str  += '<option value="Nettithara Kareethara Nadappatha">Nettithara Kareethara Nadappatha</option>';
+            road_name_options_str  += '<option value="Oonnukal Thekke Oonnukal Nadappatha">Oonnukal Thekke Oonnukal Nadappatha</option>';
+            road_name_options_str  += '<option value="Palakkamattam Kudilil Thodu Road">Palakkamattam Kudilil Thodu Road</option>';
+            road_name_options_str  += '<option value="Palakkattu Kollamparambu Nadappatha">Palakkattu Kollamparambu Nadappatha</option>';
+            road_name_options_str  += '<option value="Palakkattu Ottaviruthiyil Nadappatha">Palakkattu Ottaviruthiyil Nadappatha</option>';
+            road_name_options_str  += '<option value="Panchayath Hospital Kalappurathazham Road">Panchayath Hospital Kalappurathazham Road</option>';
+            road_name_options_str  += '<option value="Panchayath Padi Mundakkal Padi Road">Panchayath Padi Mundakkal Padi Road</option>';
+            road_name_options_str  += '<option value="Parambankari Thattaparambu Nadappatha">Parambankari Thattaparambu Nadappatha</option>';
+            road_name_options_str  += '<option value="Parapparambu Thadathilthazham Road">Parapparambu Thadathilthazham Road</option>';
+            road_name_options_str  += '<option value="Parasserithazham Kalappuramyalilthazham Road">Parasserithazham Kalappuramyalilthazham Road</option>';
+            road_name_options_str  += '<option value="Paravanthuruthu 49 number anganavadi Road">Paravanthuruthu 49 number anganavadi Road</option>';
+            road_name_options_str  += '<option value="Paravanthuruthu Kallippuram Road">Paravanthuruthu Kallippuram Road</option>';
+            road_name_options_str  += '<option value="Parayanparambu Arukandam Road">Parayanparambu Arukandam Road</option>';
+            road_name_options_str  += '<option value="Parayanparambu Padinjarekattipparambu Road">Parayanparambu Padinjarekattipparambu Road</option>';
+            road_name_options_str  += '<option value="Parayil Colony Nadappatha 1">Parayil Colony Nadappatha 1</option>';
+            road_name_options_str  += '<option value="Parayil Colony Nadappatha 2">Parayil Colony Nadappatha 2</option>';
+            road_name_options_str  += '<option value="Parayil Colony Nadappatha 4">Parayil Colony Nadappatha 4</option>';
+            road_name_options_str  += '<option value="Parayil Pazhukkayilthazham Road">Parayil Pazhukkayilthazham Road</option>';
+            road_name_options_str  += '<option value="Parel Colony Nadappatha 3">Parel Colony Nadappatha 3</option>';
+            road_name_options_str  += '<option value="Paremadappalli Choorakkattumyalil Nadappatha">Paremadappalli Choorakkattumyalil Nadappatha</option>';
+            road_name_options_str  += '<option value="Paremyalil Junction Chorathupurayidam Road">Paremyalil Junction Chorathupurayidam Road</option>';
+            road_name_options_str  += '<option value="Pattarapparambu Puthiyedathuthazham Road">Pattarapparambu Puthiyedathuthazham Road</option>';
+            road_name_options_str  += '<option value="Petrol Pump Kalarakkamyalil Road">Petrol Pump Kalarakkamyalil Road</option>';
+            road_name_options_str  += '<option value="Petrol Pump Lakshanathuparambu Road">Petrol Pump Lakshanathuparambu Road</option>';
+            road_name_options_str  += '<option value="Placherilthazham Mattathilkunnel Kari Road">Placherilthazham Mattathilkunnel Kari Road</option>';
+            road_name_options_str  += '<option value="Plamparambu Periyakulangara Road">Plamparambu Periyakulangara Road</option>';
+            road_name_options_str  += '<option value="Pozhiyil Valiyaparambu Nadappatha">Pozhiyil Valiyaparambu Nadappatha</option>';
+            road_name_options_str  += '<option value="Prabhath Library Pazhayapurathazham Road">Prabhath Library Pazhayapurathazham Road</option>';
+            road_name_options_str  += '<option value="Pulikkapparambu Chunkam Road">Pulikkapparambu Chunkam Road</option>';
+            road_name_options_str  += '<option value="Pulpra Pulikkattuparambu Nadappatha">Pulpra Pulikkattuparambu Nadappatha</option>';
+            road_name_options_str  += '<option value="Punnakkattu Babitha Bhavan Nadappatha">Punnakkattu Babitha Bhavan Nadappatha</option>';
+            road_name_options_str  += '<option value="Punnakkattu Mudakkali Nadappatha">Punnakkattu Mudakkali Nadappatha</option>';
+            road_name_options_str  += '<option value="Puthenmadam Valiyaparambu Colony Nadappatha">Puthenmadam Valiyaparambu Colony Nadappatha</option>';
+            road_name_options_str  += '<option value="Puthenpalli Kattathuvalel Road">Puthenpalli Kattathuvalel Road</option>';
+            road_name_options_str  += '<option value="Puthenpalli Maliyekkal Road">Puthenpalli Maliyekkal Road</option>';
+            road_name_options_str  += '<option value="Puthenpalli Vakkepparambu Nadappatha">Puthenpalli Vakkepparambu Nadappatha</option>';
+            road_name_options_str  += '<option value="Puthenparambu Vattapparambu Road">Puthenparambu Vattapparambu Road</option>';
+            road_name_options_str  += '<option value="Puthenpura Parepparambu Nadappatha">Puthenpura Parepparambu Nadappatha</option>';
+            road_name_options_str  += '<option value="Puthenpurakkal Thekkeniravathu Nadappatha">Puthenpurakkal Thekkeniravathu Nadappatha</option>';
+            road_name_options_str  += '<option value="Puthenpurayil Veluthedathuparambu Road">Puthenpurayil Veluthedathuparambu Road</option>';
+            road_name_options_str  += '<option value="Puthethu Arakkal Nadappatha">Puthethu Arakkal Nadappatha</option>';
+            road_name_options_str  += '<option value="Puthettu Malekkal Road">Puthettu Malekkal Road</option>';
+            road_name_options_str  += '<option value="Puthettu Tharayil Nadappatha">Puthettu Tharayil Nadappatha</option>';
+            road_name_options_str  += '<option value="Puthiyidathuthazham Kollappallil Road">Puthiyidathuthazham Kollappallil Road</option>';
+            road_name_options_str  += '<option value="Puthumanapparambu Pazhukkayilthazham Road">Puthumanapparambu Pazhukkayilthazham Road</option>';
+            road_name_options_str  += '<option value="Puthuveettil Lakshanathuparambu Nadappatha">Puthuveettil Lakshanathuparambu Nadappatha</option>';
+            road_name_options_str  += '<option value="Ration Kada Asariparambuthazham Road">Ration Kada Asariparambuthazham Road</option>';
+            road_name_options_str  += '<option value="Ration Kada Chackoppalli Road">Ration Kada Chackoppalli Road</option>';
+            road_name_options_str  += '<option value="Ration Kada Gurumandiram Pooppallil Road">Ration Kada Gurumandiram Pooppallil Road</option>';
+            road_name_options_str  += '<option value="S N Saw Mill Ekamma Road">S N Saw Mill Ekamma Road</option>';
+            road_name_options_str  += '<option value="S N Saw Mill Kalambukadu Ekkamma Road">S N Saw Mill Kalambukadu Ekkamma Road</option>';
+            road_name_options_str  += '<option value="SBI Cherivuparambu Harijan Settlement Colony Road">SBI Cherivuparambu Harijan Settlement Colony Road</option>';
+            road_name_options_str  += '<option value="SBI Kaniyamparambu Road">SBI Kaniyamparambu Road</option>';
+            road_name_options_str  += '<option value="SMV School Thoombilthazham Road">SMV School Thoombilthazham Road</option>';
+            road_name_options_str  += '<option value="SMV UP School Kollamparambu Road">SMV UP School Kollamparambu Road</option>';
+            road_name_options_str  += '<option value="ST.Savios Pazhukkayilthazham Road">ST.Savios Pazhukkayilthazham Road</option>';
+            road_name_options_str  += '<option value="ST.Thomas Karithuruthel Road">ST.Thomas Karithuruthel Road</option>';
+            road_name_options_str  += '<option value="ST.Thomas Vattukulam Road">ST.Thomas Vattukulam Road</option>';
+            road_name_options_str  += '<option value="Sarada Kshethram Arakkal Nadappatha">Sarada Kshethram Arakkal Nadappatha</option>';
+            road_name_options_str  += '<option value="Sarada Kshethram Kizhakke Nada Road">Sarada Kshethram Kizhakke Nada Road</option>';
+            road_name_options_str  += '<option value="Sasthakunnumpuram Kallidantithazham Road">Sasthakunnumpuram Kallidantithazham Road</option>';
+            road_name_options_str  += '<option value="Sasthamkunnu Harijan Settlement Colony Road">Sasthamkunnu Harijan Settlement Colony Road</option>';
+            road_name_options_str  += '<option value="Sasthamkunnu Valiyamyalil Nadappatha">Sasthamkunnu Valiyamyalil Nadappatha</option>';
+            road_name_options_str  += '<option value="Sasthamkunnumpuram Thottuvelithazham Road">Sasthamkunnumpuram Thottuvelithazham Road</option>';
+            road_name_options_str  += '<option value="Sister Savio Anjilithottam Nadappatha">Sister Savio Anjilithottam Nadappatha</option>';
+            road_name_options_str  += '<option value="Smashanam Kothavarakkunnu Road">Smashanam Kothavarakkunnu Road</option>';
+            road_name_options_str  += '<option value="Snehapuram Karinattumyalil Road">Snehapuram Karinattumyalil Road</option>';
+            road_name_options_str  += '<option value="Snehapuram Karuvallithazham Road">Snehapuram Karuvallithazham Road</option>';
+            road_name_options_str  += '<option value="Sreekrishna Illathuthazham Road">Sreekrishna Illathuthazham Road</option>';
+            road_name_options_str  += '<option value="Sreekrishna Velamparambu Road">Sreekrishna Velamparambu Road</option>';
+            road_name_options_str  += '<option value="Sreekrishnaswami Kshethram Parasserithazham Nadappatha">Sreekrishnaswami Kshethram Parasserithazham Nadappatha</option>';
+            road_name_options_str  += '<option value="Stadium Kurichipparambu Road">Stadium Kurichipparambu Road</option>';
+            road_name_options_str  += '<option value="Stadium Road Junction Valeppadi Road">Stadium Road Junction Valeppadi Road</option>';
+            road_name_options_str  += '<option value="Thacheril Kothavarakkunnu Road">Thacheril Kothavarakkunnu Road</option>';
+            road_name_options_str  += '<option value="Thacherimuttu Chozhikkara Road">Thacherimuttu Chozhikkara Road</option>';
+            road_name_options_str  += '<option value="Thacherimuttu Tharethazham Road">Thacherimuttu Tharethazham Road</option>';
+            road_name_options_str  += '<option value="Thadiyammel Chackoppalli Nadappatha">Thadiyammel Chackoppalli Nadappatha</option>';
+            road_name_options_str  += '<option value="Thadiyammel Karinattu Nadappatha">Thadiyammel Karinattu Nadappatha</option>';
+            road_name_options_str  += '<option value="Thadiyammel Koladaparambu Junction Road">Thadiyammel Koladaparambu Junction Road</option>';
+            road_name_options_str  += '<option value="Thaiparambil Valiyamyalil Nadappatha">Thaiparambil Valiyamyalil Nadappatha</option>';
+            road_name_options_str  += '<option value="Thakidimadappallil Thikkattuthazham Road">Thakidimadappallil Thikkattuthazham Road</option>';
+            road_name_options_str  += '<option value="Thakidimyalil Kalappurathazham Manalethazham Road">Thakidimyalil Kalappurathazham Manalethazham Road</option>';
+            road_name_options_str  += '<option value="Thakidimyalil Parayil Road">Thakidimyalil Parayil Road</option>';
+            road_name_options_str  += '<option value="Thammattu Parappallichal Road">Thammattu Parappallichal Road</option>';
+            road_name_options_str  += '<option value="Thammattu Pulikkapparambu Road">Thammattu Pulikkapparambu Road</option>';
+            road_name_options_str  += '<option value="Thandilakkattu Thundathil Nadappatha">Thandilakkattu Thundathil Nadappatha</option>';
+            road_name_options_str  += '<option value="Tharakkunnel Puthethu Nadappatha">Tharakkunnel Puthethu Nadappatha</option>';
+            road_name_options_str  += '<option value="Tharakkunnu Laksham Veedu Road">Tharakkunnu Laksham Veedu Road</option>';
+            road_name_options_str  += '<option value="Thayyil Thattaruparambu Nadappatha">Thayyil Thattaruparambu Nadappatha</option>';
+            road_name_options_str  += '<option value="Theeyathu Junction Madathilparambu Road">Theeyathu Junction Madathilparambu Road</option>';
+            road_name_options_str  += '<option value="Thekkechooravelil Parayil Nadappatha">Thekkechooravelil Parayil Nadappatha</option>';
+            road_name_options_str  += '<option value="Thevalakkattupadi Meenikkonam Road">Thevalakkattupadi Meenikkonam Road</option>';
+            road_name_options_str  += '<option value="Thoombilthazham Chirappadam Nadappatha">Thoombilthazham Chirappadam Nadappatha</option>';
+            road_name_options_str  += '<option value="Thoombilthazham Puthethu Road">Thoombilthazham Puthethu Road</option>';
+            road_name_options_str  += '<option value="Thottipparambu Illathuthazham Road">Thottipparambu Illathuthazham Road</option>';
+            road_name_options_str  += '<option value="Thottiyil Cherumakkal Road">Thottiyil Cherumakkal Road</option>';
+            road_name_options_str  += '<option value="Thundathil Kalappuramyalil Nadappatha">Thundathil Kalappuramyalil Nadappatha</option>';
+            road_name_options_str  += '<option value="Thuruthipparambu Lahayilthazham Road">Thuruthipparambu Lahayilthazham Road</option>';
+            road_name_options_str  += '<option value="Udayamthara 4 Cent Colony Road">Udayamthara 4 Cent Colony Road</option>';
+            road_name_options_str  += '<option value="Udayamthara 4 Cent Colony Sub Road 1">Udayamthara 4 Cent Colony Sub Road 1</option>';
+            road_name_options_str  += '<option value="Udayamthara 4 Cent Colony Sub Road 2">Udayamthara 4 Cent Colony Sub Road 2</option>';
+            road_name_options_str  += '<option value="Udayamthara Cheruthara Road">Udayamthara Cheruthara Road</option>';
+            road_name_options_str  += '<option value="Udayamthara KV Canal Road">Udayamthara KV Canal Road</option>';
+            road_name_options_str  += '<option value="Udayamthara Mundamattam Nadappatha">Udayamthara Mundamattam Nadappatha</option>';
+            road_name_options_str  += '<option value="Vakkepparambu Koladapparambu Road">Vakkepparambu Koladapparambu Road</option>';
+            road_name_options_str  += '<option value="Vakkepparambu Thadiyammel Nadappatha">Vakkepparambu Thadiyammel Nadappatha</option>';
+            road_name_options_str  += '<option value="Valayamparambil Madathilparambil Nadappatha">Valayamparambil Madathilparambil Nadappatha</option>';
+            road_name_options_str  += '<option value="Valeppadi Pothalam Road">Valeppadi Pothalam Road</option>';
+            road_name_options_str  += '<option value="Valiyaparambil Parappuram Nadappatha">Valiyaparambil Parappuram Nadappatha</option>';
+            road_name_options_str  += '<option value="Valiyaparambu 4 Cent Colony Road">Valiyaparambu 4 Cent Colony Road</option>';
+            road_name_options_str  += '<option value="Valiyaparambu Karinattuthazham Nadappatha">Valiyaparambu Karinattuthazham Nadappatha</option>';
+            road_name_options_str  += '<option value="Valiyaparambu Moolethazham Road">Valiyaparambu Moolethazham Road</option>';
+            road_name_options_str  += '<option value="Valiyaparambu Puthenpeedikayil Nadappatha">Valiyaparambu Puthenpeedikayil Nadappatha</option>';
+            road_name_options_str  += '<option value="Varikkamthottiyil Mangalathuthazham Road">Varikkamthottiyil Mangalathuthazham Road</option>';
+            road_name_options_str  += '<option value="Vattapparambu Puthiyedathuthazham Nadappatha">Vattapparambu Puthiyedathuthazham Nadappatha</option>';
+            road_name_options_str  += '<option value="Vattukulam Chathurapparambu Road">Vattukulam Chathurapparambu Road</option>';
+            road_name_options_str  += '<option value="Vattukulam Madathilparambu Road">Vattukulam Madathilparambu Road</option>';
+            road_name_options_str  += '<option value="Vayanashala Kollamparambu Road">Vayanashala Kollamparambu Road</option>';
+            road_name_options_str  += '<option value="Vazhakkala Idappurakkal Road">Vazhakkala Idappurakkal Road</option>';
+            road_name_options_str  += '<option value="Veliyambra Kattathu Road">Veliyambra Kattathu Road</option>';
+            road_name_options_str  += '<option value="Veliyambra Thoppil Nadappatha">Veliyambra Thoppil Nadappatha</option>';
+            road_name_options_str  += '<option value="Veliyambra Varavukalayil Road">Veliyambra Varavukalayil Road</option>';
+            road_name_options_str  += '<option value="Venthakari Kadathukadavu KV Canal Theeradhesha Road">Venthakari Kadathukadavu KV Canal Theeradhesha Road</option>';
+            road_name_options_str  += '<option value="Viruthikulangara Arivaram Road">Viruthikulangara Arivaram Road</option>';
+            road_name_options_str  += '<option value="Viruthikulangara Bavoosa Convent Road">Viruthikulangara Bavoosa Convent Road</option>';
+            road_name_options_str  += '<option value="Vishnu Maheswara Kshethram Vadakaraparambu Nadappatha">Vishnu Maheswara Kshethram Vadakaraparambu Nadappatha</option>';
+            sel_road_name.innerHTML = road_name_options_str;
+            div_road_name.appendChild(sel_road_name);
+            var lab_road_name = document.createElement('div');
+            lab_road_name.innerHTML = 'road_name';
+            lab_road_name.className = 'filterlabel';
+            div_road_name.appendChild(lab_road_name);
+            var reset_road_name = document.createElement('div');
+            reset_road_name.innerHTML = 'clear filter';
+            reset_road_name.className = 'filterlabel';
+            reset_road_name.onclick = function() {
+                var options = document.getElementById("sel_road_name").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_road_name.appendChild(reset_road_name);
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_road_stype = document.createElement('div');
+            div_road_stype.id = "div_road_stype";
+            div_road_stype.className= "filterselect";
+            document.getElementById("menu").appendChild(div_road_stype);
+            sel_road_stype = document.createElement('select');
+            sel_road_stype.multiple = true;
+            sel_road_stype.size = 4;
+            sel_road_stype.id = "sel_road_stype";
+            var road_stype_options_str = "";
+            sel_road_stype.onchange = function(){filterFunc()};
+            road_stype_options_str  += '<option value="Concrete">Concrete</option>';
+            road_stype_options_str  += '<option value="Earthen">Earthen</option>';
+            road_stype_options_str  += '<option value="Interlock">Interlock</option>';
+            road_stype_options_str  += '<option value="Metalled">Metalled</option>';
+            road_stype_options_str  += '<option value="Tar">Tar</option>';
+            sel_road_stype.innerHTML = road_stype_options_str;
+            div_road_stype.appendChild(sel_road_stype);
+            var lab_road_stype = document.createElement('div');
+            lab_road_stype.innerHTML = 'road_stype';
+            lab_road_stype.className = 'filterlabel';
+            div_road_stype.appendChild(lab_road_stype);
+            var reset_road_stype = document.createElement('div');
+            reset_road_stype.innerHTML = 'clear filter';
+            reset_road_stype.className = 'filterlabel';
+            reset_road_stype.onclick = function() {
+                var options = document.getElementById("sel_road_stype").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_road_stype.appendChild(reset_road_stype);
+			// Initialize the feature group to store editable layers
+var drawnItems = new L.FeatureGroup();
+map.addLayer(drawnItems);
+
+// Add the Leaflet Draw control to the map
+var drawControl = new L.Control.Draw({
+    position: 'bottomleft',
+    edit: {
+        featureGroup: drawnItems // Remove this if you don't want bulk editing
+    },
+    draw: {
+        polyline: true,
+        polygon: true,
+        marker: true
+    }
+});
+map.addControl(drawControl);
+
+// Event listener for when a shape is created
+map.on(L.Draw.Event.CREATED, function (event) {
+    var layer = event.layer;
+    drawnItems.addLayer(layer);
+
+    // Prompt for shape attributes
+    var name = prompt('Enter a name for this shape:');
+    var id = prompt('Enter an ID for this shape:');
+    var category = prompt('Enter a category for this shape:');
+    var typeOfWork = prompt('Enter the type of work for this shape:');
+    var amount = prompt('Enter the amount for this shape:');
+    var year = prompt('Enter the year for this shape:');
+
+    // Attach properties to the feature
+    layer.feature = layer.feature || {};
+    layer.feature.type = "Feature";
+    layer.feature.properties = {
+        name: name,
+        id: id,
+        category: category,
+        type_of_work: typeOfWork,
+        amount: amount,
+        year: year
+    };
+
+    // Add an edit and delete button in the popup
+    layer.bindPopup(generatePopupContent(layer));
+
+    saveToLocalStorage(); // Save the layer to localStorage
+});
+
+// Function to generate popup content
+function generatePopupContent(layer) {
+    var props = layer.feature.properties || {};
+    return `
+        <strong>Name:</strong> ${props.name || ''}<br>
+        <strong>ID:</strong> ${props.id || ''}<br>
+        <strong>Category:</strong> ${props.category || ''}<br>
+        <strong>Type of Work:</strong> ${props.type_of_work || ''}<br>
+        <strong>Amount:</strong> ${props.amount || ''}<br>
+        <strong>Year:</strong> ${props.year || ''}<br>
+        <button onclick="editLayer(${layer._leaflet_id})">Edit</button>
+        <button onclick="deleteLayer(${layer._leaflet_id})">Delete</button>
+    `;
+}
+
+// Function to edit a layer
+function editLayer(layerId) {
+    var layer = drawnItems.getLayer(layerId);
+    if (layer) {
+        layer.editing.enable();
+        alert('Editing enabled. Drag to modify and click "Save" when done.');
+        map.once('click', function () {
+            layer.editing.disable();
+            saveToLocalStorage();
+            alert('Editing saved.');
+        });
+    }
+}
+
+// Function to delete a layer
+function deleteLayer(layerId) {
+    var layer = drawnItems.getLayer(layerId);
+    if (layer) {
+        if (confirm('Are you sure you want to delete this layer?')) {
+            drawnItems.removeLayer(layer);
+            saveToLocalStorage();
+            alert('Layer deleted.');
+        }
+    }
+}
+
+// Function to save shapes to localStorage
+function saveToLocalStorage() {
+    var savedData = drawnItems.toGeoJSON();
+    localStorage.setItem('drawnShapes', JSON.stringify(savedData));
+}
+
+// Function to load shapes from localStorage
+function loadFromLocalStorage() {
+    var savedData = JSON.parse(localStorage.getItem('drawnShapes'));
+    if (savedData) {
+        L.geoJSON(savedData, {
+            onEachFeature: function (feature, layer) {
+                drawnItems.addLayer(layer);
+
+                // Add popup with edit and delete buttons
+                layer.bindPopup(generatePopupContent(layer));
+            }
+        }).addTo(map);
+    }
+}
+
+// Load saved shapes when the page loads
+loadFromLocalStorage();
+
+// Export Functionality
+function exportData() {
+    var savedData = drawnItems.toGeoJSON();
+    var blob = new Blob([JSON.stringify(savedData)], { type: 'application/json' });
+    var link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'map_data.geojson';
+    link.click();
+}
+
+// Import Functionality
+function importData(event) {
+    var file = event.target.files[0];
+    var reader = new FileReader();
+    reader.onload = function (e) {
+        var geojsonData = JSON.parse(e.target.result);
+        L.geoJSON(geojsonData, {
+            onEachFeature: function (feature, layer) {
+                drawnItems.addLayer(layer);
+
+                // Add popup with edit and delete buttons
+                layer.bindPopup(generatePopupContent(layer));
+            }
+        }).addTo(map);
+    };
+    reader.readAsText(file);
+}
+
+// Export Button
+var exportButton = L.control({ position: 'topright' });
+exportButton.onAdd = function () {
+    var div = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+    div.innerHTML = '<a href="#" title="Export Data" style="padding: 4px; background: white; border: 1px solid #ccc; color: white; text-align: center; display: block;">📤 Export</a>';
+    div.style.cursor = 'pointer';
+    div.style.background = '#007bff';
+    div.style.color = 'white';
+    div.style.textAlign = 'center';
+    div.onclick = exportData;
+    return div;
+};
+exportButton.addTo(map);
+
+// Import Button
+var importButton = L.control({ position: 'topright' });
+importButton.onAdd = function () {
+    var div = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+    div.innerHTML = '<a href="#" title="Import Data" style="padding: 4px; background: white; border: 1px solid #ccc; color: white; text-align: center; display: block;">📥 Import</a>';
+    div.style.cursor = 'pointer';
+    div.style.background = '#28a745';
+    div.style.color = 'white';
+    div.style.textAlign = 'center';
+    div.style.marginTop = '14px';
+
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.geojson';
+    input.style.opacity = '0';
+    input.style.width = '0';
+    input.style.height = '0';
+    input.style.position = 'absolute';
+    input.onchange = importData;
+
+    div.onclick = (e) => {
+        e.stopPropagation();
+        input.click();
+    };
+
+    div.appendChild(input);
+    return div;
+};
+importButton.addTo(map);
+        </script>
+    </body>
+</html>
